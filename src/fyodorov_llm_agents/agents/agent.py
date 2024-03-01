@@ -96,3 +96,12 @@ class Agent(BaseModel):
         agent = Agent(**agent_dict)
         agent.validate()
         return agent
+
+    @staticmethod
+    def from_dict(agent_dict: dict):
+        """Instantiate Agent from dict."""
+        if not agent_dict:
+            raise ValueError('Agent dict is required')
+        agent = Agent(**agent_dict)
+        agent.validate()
+        return agent
