@@ -19,7 +19,7 @@ class Agent(BaseModel):
     tools: [Tool] = []
     rag: [] = []
     model: str | None = None
-    model_id: str | None = None
+    modelid: str | None = None
     name: str = "My Agent"
     description: str = "My Agent Description"
     prompt: str = "My Prompt"
