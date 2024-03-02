@@ -15,11 +15,11 @@ MAX_DESCRIPTION_LENGTH = 280
 VALID_CHARACTERS_REGEX = r'^[a-zA-Z0-9\s.,!?:;\'"-]+$'
 
 class Agent(BaseModel):
-    provider_id: str = None
     api_key: str = None
     tools: [Tool] = []
     rag: [] = []
-    model: str = "gpt-3.5-turbo"
+    model: str | None = None
+    model_id: str | None = None
     name: str = "My Agent"
     description: str = "My Agent Description"
     prompt: str = "My Prompt"
@@ -63,7 +63,6 @@ class Agent(BaseModel):
 
     def to_dict(self) -> dict:
         return {
-            'provider_id': self.provider_id,
             'model': self.model,
             'name': self.name,
             'description': self.description,
@@ -75,11 +74,18 @@ class Agent(BaseModel):
 
     def call_with_fn_calling(self, prompt: str = "", input: str = ""):
         # Set environmental variable
+        os.environ["OPENAI_API_KEY"] = self.api_key
         messages: [] = [
             {"content": prompt, "role": "system"},
             { "content": input, "role": "user"},
         ]
-        response = completion(model=self.model, messages=messages, max_retries=0, api_key=self.api_key)
+        tools = [tool.get_function() for tool in self.tools]
+        if tools:
+            print(f"calling litellm with model {self.model}, messages: {messages}, max_retries: 0, tools: {tools}")
+            response = completion(model=self.model, messages=messages, max_retries=0, tools=tools, tool_choice="auto")
+        else:
+            print(f"calling litellm with model {self.model}, messages: {messages}, max_retries: 0")
+            response = completion(model=self.model, messages=messages, max_retries=0)
         print(f"Response: {response}")
         answer = response.choices[0].message.content
         print(f"Answer: {answer}")

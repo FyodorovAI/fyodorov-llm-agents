@@ -163,6 +163,16 @@ class Tool(BaseModel):
             raise ValueError('Description for AI contains invalid characters')
         return description_for_ai
 
+    def get_function(self) -> dict:
+        return {
+            "type": "function",
+            "function": {
+                "name": self.name_for_ai if self.name_for_ai else self.name,
+                "description": self.description_for_ai if self.description_for_ai else self.description,
+                "parameters": self.get_api_spec()
+            }
+        }
+
     def get_prompt(self) -> str:
         prompt = f"tool: {self.name_for_ai}\ndescription: {self.description_for_ai}"
         return prompt
