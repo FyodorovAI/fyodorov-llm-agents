@@ -13,16 +13,16 @@ VALID_CHARACTERS_REGEX = r'^[a-zA-Z0-9\s.,!?:;\'"-_]+$'
 
 class Tool(BaseModel):
     name: str
-    name_for_ai: str
+    name_for_ai: str | None
     description: str
-    description_for_ai: str
+    description_for_ai: str | None
     api_type: APIUrlTypes
     api_url: HttpUrl
-    logo_url: HttpUrl
-    contact_email: str
-    legal_info_url: str
-    public: bool = False
-    user_id: str = None
+    logo_url: HttpUrl | None
+    contact_email: str | None
+    legal_info_url: str | None
+    public: bool | None = False
+    user_id: str | None = None
 
     class Config:
         arbitrary_types_allowed = True
