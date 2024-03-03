@@ -100,8 +100,8 @@ class Tool(BaseModel):
             'description': json['description'],
             'description_for_ai': json['description_for_ai'],
             'api_type': json['api']['type'],
-            'api_url': HttpUrl(json['api']['url']),
-            'logo_url': HttpUrl(json['logo_url']),
+            'api_url': HttpUrl(json['api']['url']) if json['api']['url'] else None,
+            'logo_url': HttpUrl(json['logo_url']) if json['logo_url'] else None,
             'contact_email': json['contact_email'],
             'legal_info_url': json['legal_info_url'],
         }
