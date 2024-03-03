@@ -90,15 +90,15 @@ class Tool(BaseModel):
             raise
 
     @staticmethod
-    def from_plugin_json(json: dict):
+    def from_plugin_json(json: dict) -> 'Tool':
         """Instantiate Tool from plugin json."""
         if not json:
             raise ValueError('Plugin JSON is required')
         tool_dict = {
             'name': json['name'],
-            'name_for_ai': json['name_for_model'],
+            'name_for_ai': json['name_for_ai'],
             'description': json['description'],
-            'description_for_ai': json['description_for_model'],
+            'description_for_ai': json['description_for_ai'],
             'api_type': json['api']['type'],
             'api_url': HttpUrl(json['api']['url']),
             'logo_url': HttpUrl(json['logo_url']),
@@ -110,7 +110,7 @@ class Tool(BaseModel):
         return tool
 
     @staticmethod
-    def from_yaml(yaml_str: str):
+    def from_yaml(yaml_str: str) -> 'Tool':
         """Instantiate Tool from YAML."""
         if not yaml_str:
             raise ValueError('YAML string is required')
