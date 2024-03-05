@@ -75,6 +75,7 @@ class Agent(BaseModel):
     def call_with_fn_calling(self, prompt: str = "", input: str = ""):
         # Set environmental variable
         os.environ["OPENAI_API_KEY"] = self.api_key
+        print(f"Setting OPENAI_API_KEY: {self.api_key}")
         messages: [] = [
             {"content": prompt, "role": "system"},
             { "content": input, "role": "user"},

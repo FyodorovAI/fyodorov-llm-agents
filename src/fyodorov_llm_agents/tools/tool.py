@@ -116,7 +116,6 @@ class Tool(BaseModel):
             raise ValueError('YAML string is required')
         tool_dict = yaml.safe_load(yaml_str)
         tool = Tool.from_plugin_json(tool_dict)
-        tool.validate()
         return tool
 
     @staticmethod
