@@ -163,14 +163,23 @@ class Tool(BaseModel):
         return description_for_ai
 
     def get_function(self) -> dict:
-        return {
-            "type": "function",
-            "function": {
-                "name": self.name_for_ai if self.name_for_ai else self.name,
-                "description": self.description_for_ai if self.description_for_ai else self.description,
-                "parameters": self.get_api_spec()
-            }
-        }
+        # Load the OpenAPI spec
+        openapi_spec = self.get_api_spec()
+        functions = []
+        # Iterate through the paths in the OpenAPI spec
+        for path, methods in openapi_spec.get('paths', {}).items():
+            for method, details in methods.items():
+                # Generate a template for each method
+                function = {
+                    'name': details.get('operationId') or f"{method.upper()} {path}",
+                    'url': f"{openapi_spec['servers'][0]['url']}{path}",  # Assuming first server is the correct one
+                    'method': method.upper(),
+                    'headers': {'Content-Type': 'application/json'},  # Assuming JSON, customize as needed
+                    'body': '{' + ', '.join([f'"{param['name']}": ${{parameters.{param["name"]}}}' for param in details.get('parameters', []) if param['in'] == 'body']) + '}',
+                    # Include other necessary fields like parameters, authentication, etc.
+                }
+                functions.append(function)
+        return functions
 
     def get_prompt(self) -> str:
         prompt = f"tool: {self.name_for_ai}\ndescription: {self.description_for_ai}"
@@ -191,3 +200,4 @@ class Tool(BaseModel):
         elif url.endswith('.yaml') or url.endswith('.yml'):
             spec = yaml.safe_load(res.text)
         return spec
+
