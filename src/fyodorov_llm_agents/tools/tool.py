@@ -175,7 +175,7 @@ class Tool(BaseModel):
                     'url': f"{openapi_spec['servers'][0]['url']}{path}",  # Assuming first server is the correct one
                     'method': method.upper(),
                     'headers': {'Content-Type': 'application/json'},  # Assuming JSON, customize as needed
-                    'body': '{' + ', '.join([f'"{param['name']}": ${{parameters.{param["name"]}}}' for param in details.get('parameters', []) if param['in'] == 'body']) + '}',
+                    'body': '{' + ', '.join([f'"{param["name"]}": ${{parameters.{param["name"]}}}' for param in details.get('parameters', []) if param['in'] == 'body']) + '}',
                     # Include other necessary fields like parameters, authentication, etc.
                 }
                 functions.append(function)
