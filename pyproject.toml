@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "fyodorov_llm_agents"
-version = "0.2.102"
+version = "0.2.103"
 authors = [
     { name="Daniel Ransom", email="02masseur.alibis@icloud.com" },
 ]

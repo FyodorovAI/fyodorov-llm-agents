@@ -88,10 +88,10 @@ class Agent(BaseModel):
         ]
         tools = [tool.get_function() for tool in self.tools]
         if tools:
-            print(f"calling litellm with model {self.model}, messages: {messages}, max_retries: 0, tools: {tools}")
+            print(f"calling litellm with model {self.model}, messages: {messages}, max_retries: 0, tools: {tools}, history: {history}")
             response = completion(model=model, messages=messages, max_retries=0, tools=tools, tool_choice="auto")
         else:
-            print(f"calling litellm with model {self.model}, messages: {messages}, max_retries: 0")
+            print(f"calling litellm with model {self.model}, messages: {messages}, max_retries: 0, history: {history}")
             response = completion(model=model, messages=messages, max_retries=0)
         print(f"Response: {response}")
         answer = response.choices[0].message.content
