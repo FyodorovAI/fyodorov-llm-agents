@@ -72,12 +72,16 @@ class Agent(BaseModel):
             'rag': self.rag,
         }
 
-    def call_with_fn_calling(self, prompt: str = "", input: str = ""):
+    def call_with_fn_calling(self, prompt: str = "", input: str = "", history = []) -> dict:
         # Set environmental variable
-        os.environ["OPENAI_API_KEY"] = self.api_key
-        print(f"Setting OPENAI_API_KEY: {self.api_key}")
+        if self.api_key.startswith('sk-'):
+            os.environ["OPENAI_API_KEY"] = self.api_key
+        else:
+            os.environ["MISTRAL_API_KEY"] = self.api_key
+
         messages: [] = [
             {"content": prompt, "role": "system"},
+            *history,
             { "content": input, "role": "user"},
         ]
         tools = [tool.get_function() for tool in self.tools]
@@ -91,7 +95,8 @@ class Agent(BaseModel):
         answer = response.choices[0].message.content
         print(f"Answer: {answer}")
         return {
-            "answer": answer
+            "answer": answer,
+
         }
 
     @staticmethod
