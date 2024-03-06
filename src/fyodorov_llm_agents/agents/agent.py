@@ -73,10 +73,12 @@ class Agent(BaseModel):
         }
 
     def call_with_fn_calling(self, prompt: str = "", input: str = "", history = []) -> dict:
+        model = self.model
         # Set environmental variable
         if self.api_key.startswith('sk-'):
             os.environ["OPENAI_API_KEY"] = self.api_key
         else:
+            model = 'mistral/'+self.model
             os.environ["MISTRAL_API_KEY"] = self.api_key
 
         messages: [] = [
