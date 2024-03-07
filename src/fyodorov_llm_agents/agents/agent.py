@@ -12,7 +12,7 @@ from fyodorov_llm_agents.tools.tool import Tool
 
 MAX_NAME_LENGTH = 80
 MAX_DESCRIPTION_LENGTH = 280
-VALID_CHARACTERS_REGEX = r'^[a-zA-Z0-9\s.,!?:;\'"-]+$'
+VALID_CHARACTERS_REGEX = r'^[a-zA-Z0-9\s.,!?:;\'"-_]+$'
 
 class Agent(BaseModel):
     api_key: str = None
