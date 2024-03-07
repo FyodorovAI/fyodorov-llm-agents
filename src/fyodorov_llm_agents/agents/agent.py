@@ -72,7 +72,7 @@ class Agent(BaseModel):
             'rag': self.rag,
         }
 
-    def call_with_fn_calling(self, prompt: str = "", input: str = "", history = []) -> dict:
+    def call_with_fn_calling(self, input: str = "", history = []) -> dict:
         model = self.model
         # Set environmental variable
         if self.api_key.startswith('sk-'):
@@ -82,7 +82,7 @@ class Agent(BaseModel):
             os.environ["MISTRAL_API_KEY"] = self.api_key
 
         messages: [] = [
-            {"content": prompt, "role": "system"},
+            {"content": self.prompt, "role": "system"},
             *history,
             { "content": input, "role": "user"},
         ]
@@ -94,6 +94,29 @@ class Agent(BaseModel):
             print(f"calling litellm with model {self.model}, messages: {messages}, max_retries: 0, history: {history}")
             response = litellm.completion(model=model, messages=messages, max_retries=0)
         print(f"Response: {response}")
+        tool_calls = response_message.tool_calls
+        if tool_calls:
+            for tool_call in tool_calls:
+                print(f"Calling function {tool_call.function.name}")
+                function_args = json.loads(tool_call.function.arguments)
+                function_response = self.call_api(
+                    url=function_args["url"],
+                    method=function_args["method"],
+                    body=function_args["body"],
+                )
+                messages.append(
+                    {
+                        "tool_call_id": tool_call.id,
+                        "role": "tool",
+                        "name": function_name,
+                        "content": function_response,
+                    }
+                )  # extend conversation with function response
+            response = litellm.completion(
+                model=model,
+                messages=messages,
+            )  # get a new response from the model where it can see the function response
+            print("\nSecond LLM response:\n", response)
         answer = response.choices[0].message.content
         print(f"Answer: {answer}")
         return {
@@ -101,6 +124,24 @@ class Agent(BaseModel):
 
         }
 
+    @staticmethod
+    def call_api(url: str = "", method: str = "GET", body: dict = {}) -> dict:
+        if not url:
+            raise ValueError('API URL is required')
+        try:
+            res = requests.request(
+                method=method,
+                url=url,
+                json=body,
+            )
+            if res.status_code != 200:
+                raise ValueError(f"Error fetching API json from {url}: {res.status_code}")
+            json = res.json()
+            return json
+        except Exception as e:
+            print(f"Error calling API: {e}")
+            raise
+    
     @staticmethod
     def from_yaml(yaml_str: str):
         """Instantiate Agent from YAML."""
