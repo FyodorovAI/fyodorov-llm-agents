@@ -94,8 +94,9 @@ class Agent(BaseModel):
             print(f"calling litellm with model {self.model}, messages: {messages}, max_retries: 0, history: {history}")
             response = litellm.completion(model=model, messages=messages, max_retries=0)
         print(f"Response: {response}")
-        if response.tool_calls:
-            for tool_call in response.tool_calls:
+        tool_calls = response.tool_calls
+        if tool_calls:
+            for tool_call in tool_calls:
                 print(f"Calling function {tool_call.function.name}")
                 function_args = json.loads(tool_call.function.arguments)
                 function_response = self.call_api(
