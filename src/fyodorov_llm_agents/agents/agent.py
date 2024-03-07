@@ -86,6 +86,7 @@ class Agent(BaseModel):
             *history,
             { "content": input, "role": "user"},
         ]
+        print(f"Tools: {self.tools}")
         tools = [tool.get_function() for tool in self.tools]
         if tools and litellm.supports_function_calling(model=model):
             print(f"calling litellm with model {self.model}, tools: {tools}, messages: {messages}, max_retries: 0, history: {history}")
