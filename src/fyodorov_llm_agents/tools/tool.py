@@ -179,6 +179,7 @@ class Tool(BaseModel):
                     # Include other necessary fields like parameters, authentication, etc.
                 }
                 functions.append(function)
+        print(f"functions: {functions}")
         return functions
 
     def get_prompt(self) -> str:
