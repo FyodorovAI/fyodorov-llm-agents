@@ -5,7 +5,7 @@ import queue
 import threading
 import json
 import yaml
-from pydantic import BaseModel
+from pydantic import BaseModel, HttpUrl
 from openai import OpenAI as oai
 import litellm
 from fyodorov_llm_agents.tools.tool import Tool
@@ -15,7 +15,8 @@ MAX_DESCRIPTION_LENGTH = 280
 VALID_CHARACTERS_REGEX = r'^[a-zA-Z0-9\s.,!?:;\'"-_]+$'
 
 class Agent(BaseModel):
-    api_key: str = None
+    api_key: str | None = None
+    api_url: HttpUrl | None = None
     tools: [Tool] = []
     rag: [] = []
     model: str | None = None
@@ -73,13 +74,26 @@ class Agent(BaseModel):
         }
 
     def call_with_fn_calling(self, input: str = "", history = []) -> dict:
+        litellm.set_verbose = True
         model = self.model
         # Set environmental variable
         if self.api_key.startswith('sk-'):
             os.environ["OPENAI_API_KEY"] = self.api_key
-        else:
+            self.api_url = "https://api.openai.com/v1"
+        elif self.api_key and self.api_key != '':
             model = 'mistral/'+self.model
             os.environ["MISTRAL_API_KEY"] = self.api_key
+            self.api_url = "https://api.mistral.ai/v1"
+        else:
+            print("Provider Ollama")
+            model = 'ollama/'+self.model
+            if self.api_url is None:
+                self.api_url = "https://api.ollama.ai/v1"
+
+        base_url = str(self.api_url)
+        if base_url and base_url[-1] == '/':
+            print("Removing trailing slash")
+            base_url = base_url[:-1]
 
         messages: [] = [
             {"content": self.prompt, "role": "system"},
@@ -89,11 +103,11 @@ class Agent(BaseModel):
         print(f"Tools: {self.tools}")
         tools = [tool.get_function() for tool in self.tools]
         if tools and litellm.supports_function_calling(model=model):
-            print(f"calling litellm with model {self.model}, tools: {tools}, messages: {messages}, max_retries: 0, history: {history}")
-            response = litellm.completion(model=model, messages=messages, max_retries=0, tools=tools, tool_choice="auto")
+            print(f"calling litellm with model {model}, tools: {tools}, messages: {messages}, max_retries: 0, history: {history}, base_url: {base_url}")
+            response = litellm.completion(model=model, messages=messages, max_retries=0, tools=tools, tool_choice="auto", base_url=base_url)
         else:
-            print(f"calling litellm with model {self.model}, messages: {messages}, max_retries: 0, history: {history}")
-            response = litellm.completion(model=model, messages=messages, max_retries=0)
+            print(f"calling litellm with model {model}, messages: {messages}, max_retries: 0, history: {history}, base_url: {base_url}")
+            response = litellm.completion(model=model, messages=messages, max_retries=0, base_url=base_url)
         print(f"Response: {response}")
         tool_calls = []
         if hasattr(response, 'tool_calls'):
