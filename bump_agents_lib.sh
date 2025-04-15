@@ -15,8 +15,19 @@ else
     # Run make release
     make release
     PAUSE=90
+    set +x
     echo "Waiting for $PAUSE seconds..."
-    sleep $PAUSE
+    for ((i=$PAUSE; i>0; i--))
+    do
+        # -e  => enable interpretation of backslash escapes
+        # -n  => do not output the trailing newline
+        echo -en "\r\033[KCountdown: $i"
+        sleep 1
+    done
+
+    # Move to a new line when done
+    echo
+    set -x
 fi
 
 # Extract the new version
@@ -32,5 +43,6 @@ bump_and_reinstall() {
 
 bump_and_reinstall $BASE/../Tsiolkovsky/src
 bump_and_reinstall $BASE/../Gagarin/src
+bump_and_reinstall $BASE/../Dostoyevsky/src
 
 date
