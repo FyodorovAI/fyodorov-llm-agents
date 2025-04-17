@@ -25,7 +25,7 @@ class MCPTool(BaseModel):
     logo_url: Optional[str] = None                    # stored as text; could be a URL
     user_id: Optional[str] = None                     # uuid
 
-    public: bool = False
+    public: Optional[bool] = False
     api_type: Optional[str] = None
     api_url: Optional[str] = None                     # stored as text; could also be HttpUrl
     auth_method: Optional[str] = None
@@ -71,4 +71,4 @@ class MCPTool(BaseModel):
         """
         Convert this Pydantic model to a plain dict (e.g., for inserting into Supabase).
         """
-        return self.dict()
+        return self.dict(exclude_none=True)
