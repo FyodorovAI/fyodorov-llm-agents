@@ -1,5 +1,5 @@
-from pydantic import BaseModel, EmailStr, HttpUrl, Field
-from typing import TypeVar, Optional, Dict, Any, Literal
+from pydantic import BaseModel, HttpUrl, Field
+from typing import Optional, Dict, Any, Literal
 import re
 from datetime import datetime
 
@@ -19,7 +19,7 @@ class MCPTool(BaseModel):
     created_at: Optional[datetime] = None             # timestamptz
     updated_at: Optional[datetime] = None             # timestamptz
 
-    display_name: str = Field(..., max_length=MAX_DISPLAY_NAME_LENGTH)
+    display_name: Optional[str] = Field(..., max_length=MAX_DISPLAY_NAME_LENGTH)
     handle: Optional[str] = None
     description: Optional[str] = Field(None, max_length=MAX_DESCRIPTION_LENGTH)
     logo_url: Optional[str] = None                    # stored as text; could be a URL
