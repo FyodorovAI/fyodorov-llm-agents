@@ -10,6 +10,7 @@ from typing import Optional
 from openai import OpenAI as oai
 import litellm
 from fyodorov_llm_agents.tools.mcp_tool import MCPTool as Tool
+from datetime import datetime
 
 MAX_NAME_LENGTH = 80
 MAX_DESCRIPTION_LENGTH = 280
