@@ -8,17 +8,20 @@ import yaml
 from pydantic import BaseModel, HttpUrl
 from openai import OpenAI as oai
 import litellm
-from fyodorov_llm_agents.tools.tool import Tool
+from fyodorov_llm_agents.tools.mcp_tool import MCPTool as Tool
 
 MAX_NAME_LENGTH = 80
 MAX_DESCRIPTION_LENGTH = 280
 VALID_CHARACTERS_REGEX = r'^[a-zA-Z0-9\s.,!?:;\'"-_]+$'
 
 class Agent(BaseModel):
+    id: Optional[int] = None
+    created_at: Optional[datetime] = None
     api_key: str | None = None
     api_url: HttpUrl | None = None
-    tools: [Tool] = []
-    rag: [] = []
+    tools: list[Tool] = []
+    rag: list[dict] = []
+    chat_history: list[dict] = []
     model: str | None = None
     modelid: str | None = None
     name: str = "My Agent"
@@ -63,15 +66,16 @@ class Agent(BaseModel):
         return prompt
 
     def to_dict(self) -> dict:
-        return {
-            'model': self.model,
-            'name': self.name,
-            'description': self.description,
-            'prompt': self.prompt,
-            'prompt_size': self.prompt_size,
-            'tools': self.tools,
-            'rag': self.rag,
-        }
+        return self.dict(exclude_none=True)
+        # return {
+        #     'model': self.model,
+        #     'name': self.name,
+        #     'description': self.description,
+        #     'prompt': self.prompt,
+        #     'prompt_size': self.prompt_size,
+        #     'tools': self.tools,
+        #     'rag': self.rag,
+        # }
 
     def call_with_fn_calling(self, input: str = "", history = []) -> dict:
         litellm.set_verbose = True

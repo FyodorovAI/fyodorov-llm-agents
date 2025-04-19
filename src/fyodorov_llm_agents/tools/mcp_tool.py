@@ -2,12 +2,13 @@ from pydantic import BaseModel, HttpUrl, Field
 from typing import Optional, Dict, Any, Literal
 import re
 from datetime import datetime
+import yaml
 
 APIUrlTypes = Literal['openapi']
 
 # Example regex for validating textual fields; adjust as needed
 VALID_CHARACTERS_REGEX = r'^[a-zA-Z0-9\s.,!?:;\'"\-_]+$'
-MAX_DISPLAY_NAME_LENGTH = 80
+MAX_NAME_LENGTH = 80
 MAX_DESCRIPTION_LENGTH = 1000
 
 class MCPTool(BaseModel):
@@ -19,7 +20,7 @@ class MCPTool(BaseModel):
     created_at: Optional[datetime] = None             # timestamptz
     updated_at: Optional[datetime] = None             # timestamptz
 
-    display_name: Optional[str] = Field(..., max_length=MAX_DISPLAY_NAME_LENGTH)
+    name: Optional[str] = Field(..., max_length=MAX_NAME_LENGTH)
     handle: Optional[str] = None
     description: Optional[str] = Field(None, max_length=MAX_DESCRIPTION_LENGTH)
     logo_url: Optional[str] = None                    # stored as text; could be a URL
@@ -36,13 +37,13 @@ class MCPTool(BaseModel):
 
     # Example validations below. Adjust/extend to fit your needs.
 
-    def validate_model_fields(self) -> bool:
+    def validate(self) -> bool:
         """
         Run custom validations on the model fields.
         Returns True if all validations pass, otherwise raises ValueError.
         """
-        if self.display_name:
-            self._validate_display_name(self.display_name)
+        if self.name:
+            self._validate_name(self.name)
         if self.description:
             self._validate_description(self.description)
         if self.api_url:
@@ -53,9 +54,9 @@ class MCPTool(BaseModel):
         return True
 
     @staticmethod
-    def _validate_display_name(name: str) -> None:
+    def _validate_name(name: str) -> None:
         if not re.match(VALID_CHARACTERS_REGEX, name):
-            raise ValueError("display_name contains invalid characters.")
+            raise ValueError("name contains invalid characters.")
 
     @staticmethod
     def _validate_description(description: str) -> None:
@@ -66,6 +67,18 @@ class MCPTool(BaseModel):
     def _validate_url(url: str) -> None:
         if not HttpUrl.validate(url):
             raise ValueError("{url} is not a valid URL.")
+
+    @staticmethod
+    def from_yaml(yaml_str: str) -> 'Tool':
+        """Instantiate Tool from YAML."""
+        if not yaml_str:
+            raise ValueError('YAML string is required')
+        tool_dict = yaml.safe_load(yaml_str)
+        if not isinstance(tool_dict, dict):
+            raise ValueError('YAML string must represent a dictionary')
+        tool = MCPTool(**tool_dict)
+        tool.validate()
+        return tool
 
     def to_dict(self) -> dict:
         """
