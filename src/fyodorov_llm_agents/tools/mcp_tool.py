@@ -69,7 +69,7 @@ class MCPTool(BaseModel):
             raise ValueError("{url} is not a valid URL.")
 
     @staticmethod
-    def from_yaml(yaml_str: str) -> 'Tool':
+    def from_yaml(yaml_str: str):
         """Instantiate Tool from YAML."""
         if not yaml_str:
             raise ValueError('YAML string is required')
