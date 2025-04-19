@@ -23,7 +23,6 @@ class Agent(BaseModel):
     api_url: HttpUrl | None = None
     tools: list[str] = []
     rag: list[dict] = []
-    chat_history: list[dict] = []
     model: str | None = None
     modelid: str | None = None
     name: str = "My Agent"
