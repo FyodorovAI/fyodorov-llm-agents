@@ -6,6 +6,7 @@ import threading
 import json
 import yaml
 from pydantic import BaseModel, HttpUrl
+from typing import Optional
 from openai import OpenAI as oai
 import litellm
 from fyodorov_llm_agents.tools.mcp_tool import MCPTool as Tool
