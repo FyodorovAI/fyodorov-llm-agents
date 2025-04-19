@@ -46,10 +46,6 @@ class MCPTool(BaseModel):
             self._validate_name(self.name)
         if self.description:
             self._validate_description(self.description)
-        if self.api_url:
-            self._validate_url(self.api_url)
-        if self.logo_url:
-            self._validate_url(self.logo_url)
         # Add more validations as desired...
         return True
 
@@ -62,11 +58,6 @@ class MCPTool(BaseModel):
     def _validate_description(description: str) -> None:
         if not re.match(VALID_CHARACTERS_REGEX, description):
             raise ValueError("description contains invalid characters.")
-
-    @staticmethod
-    def _validate_url(url: str) -> None:
-        if not HttpUrl.validate(url):
-            raise ValueError("{url} is not a valid URL.")
 
     @staticmethod
     def from_yaml(yaml_str: str):

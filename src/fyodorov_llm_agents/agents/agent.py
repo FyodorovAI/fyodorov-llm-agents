@@ -21,7 +21,7 @@ class Agent(BaseModel):
     created_at: Optional[datetime] = None
     api_key: str | None = None
     api_url: HttpUrl | None = None
-    tools: list[Tool] = []
+    tools: list[str] = []
     rag: list[dict] = []
     chat_history: list[dict] = []
     model: str | None = None
