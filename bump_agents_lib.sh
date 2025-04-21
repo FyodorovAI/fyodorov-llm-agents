@@ -39,6 +39,11 @@ bump_and_reinstall() {
     echo "Bumping and reinstalling lib in $DIRECTORY/requirements.txt to version $NEW_VERSION..."
     sed -i '' -E "s/fyodorov_llm_agents==.*/fyodorov_llm_agents==$NEW_VERSION/" $DIRECTORY/requirements.txt
     source $DIRECTORY/venv/bin/activate && pip install --force-reinstall fyodorov_llm_agents==$NEW_VERSION && deactivate
+    # Check if the directory ends in /src
+    if [[ $DIRECTORY == */src ]]; then
+        # Remove the last /src from the path
+        DIRECTORY=${DIRECTORY%/src}
+    fi
     cd $DIRECTORY && git commit -a -m "bump agents lib to $NEW_VERSION" && git push
     cd $BASE
 }
