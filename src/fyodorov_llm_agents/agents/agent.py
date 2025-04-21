@@ -1,10 +1,9 @@
 import os
 import re
-import json
 from pydantic import BaseModel, HttpUrl
 from typing import Optional
 import litellm
-from fyodorov_llm_agents.tools.mcp_tool_service import MCPTool as ToolService
+# from fyodorov_llm_agents.tools.mcp_tool_service import MCPTool as ToolService
 from datetime import datetime
 
 MAX_NAME_LENGTH = 80
@@ -135,38 +134,11 @@ class Agent(BaseModel):
             { "content": input, "role": "user"},
         ]
         print(f"Tools: {self.tools}")
-        tools = [ToolService.get_by_name_and_user_id(tool, self.user_id) for tool in self.tools]
-        if tools and litellm.supports_function_calling(model=model):
-            print(f"calling litellm with model {model}, tools: {tools}, messages: {messages}, max_retries: 0, history: {history}, base_url: {base_url}")
-            response = litellm.completion(model=model, messages=messages, max_retries=0, tools=tools, tool_choice="auto", base_url=base_url)
-        else:
-            print(f"calling litellm with model {model}, messages: {messages}, max_retries: 0, history: {history}, base_url: {base_url}")
-            response = litellm.completion(model=model, messages=messages, max_retries=0, base_url=base_url)
+        # tools
+        print(f"calling litellm with model {model}, messages: {messages}, max_retries: 0, history: {history}, base_url: {base_url}")
+        response = litellm.completion(model=model, messages=messages, max_retries=0, base_url=base_url)
         print(f"Response: {response}")
         answer = response.choices[0].message
-        if hasattr(response, 'tool_calls') and response.tool_calls:
-            for tool_call in response.tool_calls:
-                print(f"Calling function {tool_call.function.name}")
-                function_args = json.loads(tool_call.function.arguments)
-                tool = tools.get(tool_call.function.name)
-                ToolService.get
-                function_response =  self.call_api(
-                    url=function_args["url"],
-                    method=function_args["method"],
-                    body=function_args["body"],
-                )
-                messages.append(
-                    {
-                        "tool_call_id": tool_call.id,
-                        "role": "tool",
-                        "name": function_name,
-                        "content": function_response,
-                    }
-                )  # extend conversation with function response
-            response = litellm.completion(
-                model=model,
-                messages=messages,
-            )
         print(f"Answer: {answer}")
         return {
             "answer": answer,
