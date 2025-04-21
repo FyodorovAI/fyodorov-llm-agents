@@ -1,15 +1,11 @@
 import os
 import re
-import requests
-import queue
-import threading
 import json
-import yaml
 from pydantic import BaseModel, HttpUrl
 from typing import Optional
-from openai import OpenAI as oai
 import litellm
 from fyodorov_llm_agents.tools.mcp_tool import MCPTool as Tool
+from fyodorov_utils.services.mcp_tool import MCPTool as ToolService
 from datetime import datetime
 
 MAX_NAME_LENGTH = 80
@@ -78,7 +74,7 @@ class Agent(BaseModel):
         #     'rag': self.rag,
         # }
 
-    def call_with_fn_calling(self, input: str = "", history = []) -> dict:
+    def call_with_fn_calling_old(self, input: str = "", history = []) -> dict:
         litellm.set_verbose = True
         model = self.model
         # Set environmental variable
@@ -106,7 +102,41 @@ class Agent(BaseModel):
             { "content": input, "role": "user"},
         ]
         print(f"Tools: {self.tools}")
-        tools = [tool.get_function() for tool in self.tools]
+        print(f"calling litellm with model {model}, messages: {messages}, max_retries: 0, history: {history}, base_url: {base_url}")
+        response = litellm.completion(model=model, messages=messages, max_retries=0, base_url=base_url)
+        print(f"Response: {response}")
+        answer = response.choices[0].message.content
+        print(f"Answer: {answer}")
+        return {
+            "answer": answer,
+
+        }
+    
+    def call_with_fn_calling(self, input: str = "", history = []) -> dict:
+        litellm.set_verbose = True
+        model = self.model
+        # Set environmental variable
+        if self.api_key.startswith('sk-'):
+            os.environ["OPENAI_API_KEY"] = self.api_key
+            self.api_url = "https://api.openai.com/v1"
+        elif self.api_key and self.api_key != '':
+            model = 'mistral/'+self.model
+            os.environ["MISTRAL_API_KEY"] = self.api_key
+            self.api_url = "https://api.mistral.ai/v1"
+        else:
+            print("Provider Ollama")
+            model = 'ollama/'+self.model
+            if self.api_url is None:
+                self.api_url = "https://api.ollama.ai/v1"
+
+        base_url = str(self.api_url.rstrip('/'))
+        messages: list[dict] = [
+            {"content": self.prompt, "role": "system"},
+            *history,
+            { "content": input, "role": "user"},
+        ]
+        print(f"Tools: {self.tools}")
+        tools = [ToolService.get_by_name_and_user_id(tool, self.user_id) for tool in self.tools]
         if tools and litellm.supports_function_calling(model=model):
             print(f"calling litellm with model {model}, tools: {tools}, messages: {messages}, max_retries: 0, history: {history}, base_url: {base_url}")
             response = litellm.completion(model=model, messages=messages, max_retries=0, tools=tools, tool_choice="auto", base_url=base_url)
@@ -114,14 +144,14 @@ class Agent(BaseModel):
             print(f"calling litellm with model {model}, messages: {messages}, max_retries: 0, history: {history}, base_url: {base_url}")
             response = litellm.completion(model=model, messages=messages, max_retries=0, base_url=base_url)
         print(f"Response: {response}")
-        tool_calls = []
-        if hasattr(response, 'tool_calls'):
-            tool_calls = response.tool_calls if response.tool_calls else []
-        if tool_calls:
-            for tool_call in tool_calls:
+        answer = response.choices[0].message
+        if hasattr(response, 'tool_calls') and response.tool_calls:
+            for tool_call in response.tool_calls:
                 print(f"Calling function {tool_call.function.name}")
                 function_args = json.loads(tool_call.function.arguments)
-                function_response = self.call_api(
+                tool = tools.get(tool_call.function.name)
+                ToolService.get
+                function_response =  self.call_api(
                     url=function_args["url"],
                     method=function_args["method"],
                     body=function_args["body"],
@@ -137,9 +167,7 @@ class Agent(BaseModel):
             response = litellm.completion(
                 model=model,
                 messages=messages,
-            )  # get a new response from the model where it can see the function response
-            print("\nSecond LLM response:\n", response)
-        answer = response.choices[0].message.content
+            )
         print(f"Answer: {answer}")
         return {
             "answer": answer,

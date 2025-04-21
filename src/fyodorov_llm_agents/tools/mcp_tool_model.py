@@ -1,8 +1,10 @@
-from pydantic import BaseModel, HttpUrl, Field
+from pydantic import BaseModel, Field
 from typing import Optional, Dict, Any, Literal
 import re
 from datetime import datetime
 import yaml
+import requests
+import json
 
 APIUrlTypes = Literal['openapi']
 
@@ -70,6 +72,43 @@ class MCPTool(BaseModel):
         tool = MCPTool(**tool_dict)
         tool.validate()
         return tool
+
+    def call(self, args: dict) -> str:
+        if not self.api_url:
+            raise ValueError("MCP tool is missing an `api_url`")
+
+        headers = {
+            "Content-Type": "application/json",
+            "User-Agent": "Fyodorov-Agent/1.0",
+        }
+
+        # Handle authentication
+        if self.auth_method == "bearer":
+            token = self.auth_info.get("token")
+            if not token:
+                raise ValueError("Bearer token required but not provided in `auth_info`")
+            headers["Authorization"] = f"Bearer {token}"
+        elif self.auth_method == "basic":
+            user = self.auth_info.get("username")
+            pwd = self.auth_info.get("password")
+            if not user or not pwd:
+                raise ValueError("Basic auth requires `username` and `password` in `auth_info`")
+            auth = (user, pwd)
+        else:
+            auth = None  # anonymous access
+
+        try:
+            print(f"Calling MCP tool at {self.api_url} with args: {args}")
+            response = requests.post(self.api_url, json=args, headers=headers, auth=auth)
+            response.raise_for_status()
+            content_type = response.headers.get("Content-Type", "")
+            if "application/json" in content_type:
+                return json.dumps(response.json(), indent=2)
+            return response.text
+        except requests.RequestException as e:
+            print(f"Error calling MCP tool: {e}")
+            return f"Error calling tool: {e}"
+
 
     def to_dict(self) -> dict:
         """
