@@ -1,6 +1,6 @@
 from datetime import datetime
 from fyodorov_utils.config.supabase import get_supabase
-from fyodorov_llm_agents.tools.mcp_tool import MCPTool as ToolModel
+from fyodorov_llm_agents.tools.mcp_tool_model import MCPTool as ToolModel
 
 class MCPTool():
     @staticmethod    

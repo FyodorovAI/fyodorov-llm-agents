@@ -4,8 +4,7 @@ import json
 from pydantic import BaseModel, HttpUrl
 from typing import Optional
 import litellm
-from fyodorov_llm_agents.tools.mcp_tool import MCPTool as Tool
-from fyodorov_utils.services.mcp_tool import MCPTool as ToolService
+from fyodorov_llm_agents.tools.mcp_tool_service import MCPTool as ToolService
 from datetime import datetime
 
 MAX_NAME_LENGTH = 80
