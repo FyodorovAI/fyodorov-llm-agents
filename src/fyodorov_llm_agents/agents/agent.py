@@ -138,7 +138,7 @@ class Agent(BaseModel):
         print(f"calling litellm with model {model}, messages: {messages}, max_retries: 0, history: {history}, base_url: {base_url}")
         response = litellm.completion(model=model, messages=messages, max_retries=0, base_url=base_url)
         print(f"Response: {response}")
-        answer = response.choices[0].message
+        answer = response.choices[0].message.content
         print(f"Answer: {answer}")
         return {
             "answer": answer,
