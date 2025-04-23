@@ -72,50 +72,12 @@ class Agent(BaseModel):
         #     'rag': self.rag,
         # }
 
-    def call_with_fn_calling_old(self, input: str = "", history = []) -> dict:
-        litellm.set_verbose = True
-        model = self.model
-        # Set environmental variable
-        if self.api_key.startswith('sk-'):
-            model = 'openai/'+self.model
-            os.environ["OPENAI_API_KEY"] = self.api_key
-            self.api_url = "https://api.openai.com/v1"
-        elif self.api_key and self.api_key != '':
-            model = 'mistral/'+self.model
-            os.environ["MISTRAL_API_KEY"] = self.api_key
-            self.api_url = "https://api.mistral.ai/v1"
-        else:
-            print("Provider Ollama")
-            model = 'ollama/'+self.model
-            if self.api_url is None:
-                self.api_url = "https://api.ollama.ai/v1"
-
-        base_url = str(self.api_url)
-        if base_url and base_url[-1] == '/':
-            print("Removing trailing slash")
-            base_url = base_url[:-1]
-
-        messages: [] = [
-            {"content": self.prompt, "role": "system"},
-            *history,
-            { "content": input, "role": "user"},
-        ]
-        print(f"Tools: {self.tools}")
-        print(f"calling litellm with model {model}, messages: {messages}, max_retries: 0, history: {history}, base_url: {base_url}")
-        response = litellm.completion(model=model, messages=messages, max_retries=0, base_url=base_url)
-        print(f"Response: {response}")
-        answer = response.choices[0].message.content
-        print(f"Answer: {answer}")
-        return {
-            "answer": answer,
-
-        }
-    
     def call_with_fn_calling(self, input: str = "", history = []) -> dict:
         litellm.set_verbose = True
         model = self.model
         # Set environmental variable
         if self.api_key.startswith('sk-'):
+            model = 'openai/'+self.model
             os.environ["OPENAI_API_KEY"] = self.api_key
             self.api_url = "https://api.openai.com/v1"
         elif self.api_key and self.api_key != '':
