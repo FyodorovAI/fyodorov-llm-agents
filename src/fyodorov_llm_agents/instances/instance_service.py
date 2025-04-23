@@ -7,6 +7,7 @@ from fyodorov_llm_agents.agents.agent_model import Agent as AgentModel
 from fyodorov_llm_agents.models.llm_model import LLMModel
 from fyodorov_llm_agents.models.llm_service import LLM
 from fyodorov_llm_agents.agents.agent_service import Agent
+from fyodorov_llm_agents.tools.mcp_tool_service import MCPTool as ToolService
 
 from .instance_model import InstanceModel
 
@@ -21,15 +22,15 @@ class Instance(InstanceModel):
         model: LLMModel = await LLM.get_model(access_token, user_id, id = agent.modelid)
         print(f"Model fetched via LLM.get_model in chat_w_fn_calls: {model}")
         provider: Provider = await Provider.get_provider_by_id(access_token, id = model.provider)
-        prompt = f"{agent.prompt}\n\n{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n"
-        agent.prompt = prompt
+        agent.prompt = f"{agent.prompt}\n\n{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n"
         agent.model = model.base_model
         agent.api_key = provider.api_key
         agent.api_url = provider.api_url
-        # for index, tool in enumerate(agent.tools):
-        #     if isinstance(tool, str):
-        #         agent.tools[index] = Tool.get_by_name_and_user_id(access_token, tool, user_id)
-        #         print(f"Tool fetched via Tool.get_by_name_and_user_id in chat_w_fn_calls: {agent.tools[index]}")
+        for index, tool in enumerate(agent.tools):
+            if isinstance(tool, str):
+                agent.tools[index] = ToolService.get_by_name_and_user_id(access_token, tool, user_id)
+                print(f"Tool fetched via Tool.get_by_name_and_user_id in chat_w_fn_calls: {agent.tools[index]}")
+                agent.prompt += f"\n\n{agent.tools[index].handle}: {agent.tools[index].description}\n\n"
         res = agent.call_with_fn_calling(input=input, history=self.chat_history, user_id=user_id)
         self.chat_history.append({
             "role": "user",
