@@ -7,7 +7,7 @@ from .providers.provider_service import Provider
 from fyodorov_llm_agents.agents.agent import Agent as AgentModel
 from fyodorov_llm_agents.models.llm_model import LLMModel
 from fyodorov_llm_agents.models.llm_service import LLM
-from fyodorov_llm_agents.instances.instance_model import InstanceModel
+from .instance_model import InstanceModel
 
 supabase: Client = get_supabase()
 
