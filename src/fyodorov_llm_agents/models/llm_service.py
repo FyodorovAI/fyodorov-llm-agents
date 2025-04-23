@@ -1,11 +1,8 @@
-
-from pydantic import BaseModel
-import re
 from datetime import datetime
-from models.model import LLMModel
-from .provider import Provider
 from supabase import Client
 from fyodorov_utils.config.supabase import get_supabase
+from fyodorov_llm_agents.providers.provider_service import Provider
+from fyodorov_llm_agents.models.llm_model import LLMModel
 
 supabase: Client = get_supabase()
 
