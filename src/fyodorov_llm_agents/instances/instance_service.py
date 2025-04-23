@@ -30,7 +30,7 @@ class Instance(InstanceModel):
         #     if isinstance(tool, str):
         #         agent.tools[index] = Tool.get_by_name_and_user_id(access_token, tool, user_id)
         #         print(f"Tool fetched via Tool.get_by_name_and_user_id in chat_w_fn_calls: {agent.tools[index]}")
-        res = agent.call_with_fn_calling(input=input, history=self.chat_history)
+        res = agent.call_with_fn_calling(input=input, history=self.chat_history, user_id=user_id)
         self.chat_history.append({
             "role": "user",
             "content": input

@@ -3,7 +3,7 @@ import re
 from pydantic import BaseModel, HttpUrl
 from typing import Optional
 import litellm
-# from fyodorov_llm_agents.tools.mcp_tool_service import MCPTool as ToolService
+from fyodorov_llm_agents.tools.mcp_tool_service import MCPTool as ToolService
 from datetime import datetime
 
 MAX_NAME_LENGTH = 80
@@ -72,7 +72,7 @@ class Agent(BaseModel):
         #     'rag': self.rag,
         # }
 
-    def call_with_fn_calling(self, input: str = "", history = []) -> dict:
+    def call_with_fn_calling(self, input: str = "", history = [], user_id: str = "") -> dict:
         litellm.set_verbose = True
         model = self.model
         # Set environmental variable
@@ -96,12 +96,59 @@ class Agent(BaseModel):
             *history,
             { "content": input, "role": "user"},
         ]
-        print(f"Tools: {self.tools}")
         # tools
-        print(f"calling litellm with model {model}, messages: {messages}, max_retries: 0, history: {history}, base_url: {base_url}")
-        response = litellm.completion(model=model, messages=messages, max_retries=0, base_url=base_url)
+        print(f"Tools: {self.tools}")
+        mcp_tools = []
+        for tool in self.tools:
+            try:
+                tool_instance = ToolService.get_by_name_and_user_id(tool, user_id)
+                mcp_tools.append(tool_instance)
+            except Exception as e:
+                print(f"Error fetching tool {tool}: {e}")
+        
+        tool_schemas = [tool.get_function() for tool in mcp_tools]
+        print(f"Tool schemas: {tool_schemas}")
+        if tool_schemas:
+            print(f"calling litellm with model {model}, messages: {messages}, max_retries: 0, history: {history}, base_url: {base_url}, tools: {tool_schemas}")
+            response = litellm.completion(model=model, messages=messages, max_retries=0, base_url=base_url)
+        else:     
+            print(f"calling litellm with model {model}, messages: {messages}, max_retries: 0, history: {history}, base_url: {base_url}")
+            response = litellm.completion(model=model, messages=messages, max_retries=0, base_url=base_url)
         print(f"Response: {response}")
-        answer = response.choices[0].message.content
+
+        message = response.choices[0].message
+
+        if hasattr(message, "tool_calls") and message.tool_calls:
+            tool_call = message.tool_calls[0]
+            fn_name = tool_call.function.name
+            args = tool_call.function.arguments
+
+            mcp_tool = mcp_tools.get(fn_name)
+            if not mcp_tool:
+                raise ValueError(f"Tool '{fn_name}' not found in loaded MCP tools")
+
+            tool_output = mcp_tool.call(args)
+
+            messages.append({
+                "role": "assistant",
+                "content": None,
+                "tool_calls": [tool_call],
+            })
+            messages.append({
+                "role": "tool",
+                "tool_call_id": tool_call.id,
+                "content": tool_output,
+            })
+
+            followup = litellm.completion(
+                model=model,
+                messages=messages,
+                max_retries=0,
+                base_url=base_url,
+            )
+            return {"answer": followup.choices[0].message.content}
+        
+        answer = message.content
         print(f"Answer: {answer}")
         return {
             "answer": answer,

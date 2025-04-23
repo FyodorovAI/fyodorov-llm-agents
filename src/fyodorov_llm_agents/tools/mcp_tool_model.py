@@ -73,6 +73,21 @@ class MCPTool(BaseModel):
         tool.validate()
         return tool
 
+    def get_function(self) -> dict:
+        """
+        Convert this MCP tool into a function definition usable by LLMs (OpenAI-style).
+        """
+        if not self.capabilities or "functions" not in self.capabilities:
+            raise ValueError(f"Tool '{self.name}' is missing `capabilities.functions`")
+
+        # For now: return the first declared capability
+        func = self.capabilities["functions"][0]
+        return {
+            "name": func["name"],
+            "description": func.get("description", "No description provided."),
+            "parameters": func.get("parameters", {}),
+        }
+
     def call(self, args: dict) -> str:
         if not self.api_url:
             raise ValueError("MCP tool is missing an `api_url`")
