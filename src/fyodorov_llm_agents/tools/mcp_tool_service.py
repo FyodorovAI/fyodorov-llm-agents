@@ -66,6 +66,9 @@ class MCPTool():
         try:
             supabase = get_supabase(access_token)
             result = supabase.table('mcp_tools').select('*').eq('user_id', user_id).eq('handle', handle).limit(1).execute()
+            if not result or not result.data or len(result.data) == 0:
+                print(f"No tool found with the given handle {handle} and user ID {user_id}: {result}")
+                return None
             tool_dict = result.data[0]
             tool = ToolModel(**tool_dict)
             return tool
