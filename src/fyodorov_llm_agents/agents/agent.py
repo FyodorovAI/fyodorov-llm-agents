@@ -77,6 +77,7 @@ class Agent(BaseModel):
         model = self.model
         # Set environmental variable
         if self.api_key.startswith('sk-'):
+            model = 'openai/'+self.model
             os.environ["OPENAI_API_KEY"] = self.api_key
             self.api_url = "https://api.openai.com/v1"
         elif self.api_key and self.api_key != '':
