@@ -3,15 +3,30 @@ from fyodorov_utils.config.supabase import get_supabase
 from .mcp_tool_model import MCPTool as ToolModel
 
 class MCPTool():
+
+    @staticmethod
+    def create_or_update_in_db(access_token: str, tool: ToolModel, user_id: str) -> str:
+        print(f"Creating or updating tool with handle {tool.handle} for user {user_id}")
+        tool_w_id = MCPTool.get_by_name_and_user_id(access_token, tool.handle, user_id)
+        if tool_w_id:
+            print(f"Tool with handle {tool.handle} already exists, updating it.")
+            return MCPTool.update_in_db(access_token, tool_w_id.id, tool)
+        else:
+            print(f"Tool with handle {tool.handle} does not exist, creating it.")
+            return MCPTool.create_in_db(access_token, tool, user_id)
+
     @staticmethod    
     def create_in_db(access_token: str, tool: ToolModel, user_id: str) -> str:
         try:
             supabase = get_supabase(access_token)
             tool_dict = tool.to_dict()
             tool_dict['user_id'] = user_id
-            del tool_dict['id']
-            del tool_dict['created_at']
-            del tool_dict['updated_at']
+            if 'id' in tool_dict:
+                del tool_dict['id']
+            if 'created_at' in tool_dict:
+                del tool_dict['created_at']
+            if 'updated_at' in tool_dict:
+                del tool_dict['updated_at']
             print('creating tool in db', tool_dict)
             result = supabase.table('mcp_tools').insert(tool_dict).execute()
             tool_id = result.data[0]['id']
@@ -66,8 +81,11 @@ class MCPTool():
         try:
             supabase = get_supabase(access_token)
             result = supabase.table('mcp_tools').select('*').eq('user_id', user_id).eq('handle', handle).limit(1).execute()
-            if not result or not result.data or len(result.data) == 0:
+            if not result or not result.data or len(result.data) == 0: # If no tools found for this user check for public tools with same name
                 print(f"No tool found with the given handle {handle} and user ID {user_id}: {result}")
+                result = supabase.table('mcp_tools').select('*').eq('handle', handle).eq('public', True).limit(1).execute()
+            if not result or not result.data or len(result.data) == 0:
+                print(f"No public tool found with the given handle {handle}: {result}")
                 return None
             tool_dict = result.data[0]
             tool = ToolModel(**tool_dict)

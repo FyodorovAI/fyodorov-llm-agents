@@ -70,7 +70,9 @@ class MCPTool(BaseModel):
         if not isinstance(tool_dict, dict):
             raise ValueError('YAML string must represent a dictionary')
         tool = MCPTool(**tool_dict)
-        tool.validate()
+        if not tool.validate():
+            print(f"Invalid tool data: {tool_dict}")
+            return None
         return tool
 
     def get_function(self) -> dict:
