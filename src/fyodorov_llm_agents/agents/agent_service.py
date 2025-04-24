@@ -72,15 +72,27 @@ class Agent(AgentModel):
             raise e
 
     @staticmethod
-    async def get_all_in_db(limit: int = 10, created_at_lt: datetime = datetime.now()) -> [dict]:
+    async def get_all_in_db(limit: int = 10, created_at_lt: datetime = datetime.now(), user_id: str = None) -> list[AgentModel]:
         try:
-            result = supabase.from_('agents') \
-                .select("*") \
-                .limit(limit) \
-                .lt('created_at', created_at_lt) \
-                .order('created_at', desc=True) \
-                .execute()
-            agents = result.data
+            supabase = get_supabase()
+            if user_id:
+                result = supabase.from_('agents') \
+                    .select("*") \
+                    .eq('user_id', user_id) \
+                    .limit(limit) \
+                    .lt('created_at', created_at_lt) \
+                    .order('created_at', desc=True) \
+                    .execute()
+            else:
+                result = supabase.from_('agents') \
+                    .select("*") \
+                    .limit(limit) \
+                    .lt('created_at', created_at_lt) \
+                    .order('created_at', desc=True) \
+                    .execute()
+            if not result.data:
+                return []
+            agents = [AgentModel(**agent) for agent in result.data]
             print(f"Fetched agents: {agents}")
             return agents
         except Exception as e:

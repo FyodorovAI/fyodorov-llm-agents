@@ -78,17 +78,28 @@ class LLM(LLMModel):
             raise e
 
     @staticmethod
-    async def get_models(limit: int = 10, created_at_lt: datetime = datetime.now()) -> [dict]:
+    async def get_models(limit: int = 10, created_at_lt: datetime = datetime.now(), user_id: str = None) -> list[LLMModel]:
         try:
-            result = supabase.table('models') \
-                        .select('*') \
-                        .order('created_at', desc=True) \
-                        .limit(limit) \
-                        .lt('created_at', created_at_lt) \
-                        .execute()
-            data = result.data
-            print('Fetched models', data)
-            return data
+            if user_id:
+                result = supabase.table('models') \
+                            .select('*') \
+                            .eq('user_id', user_id) \
+                            .order('created_at', desc=True) \
+                            .limit(limit) \
+                            .lt('created_at', created_at_lt) \
+                            .execute()
+                data = result.data
+            else:
+                result = supabase.table('models') \
+                            .select('*') \
+                            .order('created_at', desc=True) \
+                            .limit(limit) \
+                            .lt('created_at', created_at_lt) \
+                            .execute()
+                data = result.data
+            models = [LLMModel(**model) for model in data]
+            print('Fetched models', models)
+            return models
         except Exception as e:
             print('Error fetching models', str(e))
             raise e

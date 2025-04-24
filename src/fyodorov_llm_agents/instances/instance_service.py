@@ -149,14 +149,26 @@ class Instance(InstanceModel):
             raise e
 
     @staticmethod
-    def get_all_in_db(limit: int = 10, created_at_lt: datetime = datetime.now()) -> [InstanceModel]:
+    def get_all_in_db(limit: int = 10, created_at_lt: datetime = datetime.now(), user_id: str = None) -> list[InstanceModel]:
         try:
-            result = supabase.from_('instances') \
-                .select("*") \
-                .limit(limit) \
-                .lt('created_at', created_at_lt) \
-                .order('created_at', desc=True) \
-                .execute()
+            supabase = get_supabase()
+            if user_id:
+                result = supabase.from_('instances') \
+                    .select("*") \
+                    .eq('user_id', user_id) \
+                    .limit(limit) \
+                    .lt('created_at', created_at_lt) \
+                    .order('created_at', desc=True) \
+                    .execute()
+            else:
+                result = supabase.from_('instances') \
+                    .select("*") \
+                    .limit(limit) \
+                    .lt('created_at', created_at_lt) \
+                    .order('created_at', desc=True) \
+                    .execute()
+            if not result.data:
+                return []
             instance_models = [InstanceModel(**{k: str(v) if not isinstance(v, list) else v for k, v in instance.items()}) for instance in result.data]
             return instance_models
         except Exception as e:

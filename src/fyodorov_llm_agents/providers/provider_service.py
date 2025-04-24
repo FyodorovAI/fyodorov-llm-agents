@@ -122,17 +122,28 @@ class Provider(ProviderModel):
             return provider
 
     @staticmethod
-    async def get_providers(limit: int = 10, created_at_lt: datetime = datetime.now()) -> [dict]:
+    async def get_providers(limit: int = 10, created_at_lt: datetime = datetime.now(), user_id: str = None) -> list[dict]:
         try:
-            result = supabase.table('providers') \
-                        .select('*') \
-                        .order('created_at', desc=True) \
-                        .limit(limit) \
-                        .lt('created_at', created_at_lt) \
-                        .execute()
-            data = result.data
-            print('Fetched providers', data)
-            return data
+            if user_id:
+                result = supabase.table('providers') \
+                            .select('*') \
+                            .eq('user_id', user_id) \
+                            .order('created_at', desc=True) \
+                            .limit(limit) \
+                            .lt('created_at', created_at_lt) \
+                            .execute()
+                data = result.data
+            else:
+                result = supabase.table('providers') \
+                            .select('*') \
+                            .order('created_at', desc=True) \
+                            .limit(limit) \
+                            .lt('created_at', created_at_lt) \
+                            .execute()
+                data = result.data
+            providers = [ProviderModel(**provider) for provider in data]
+            print('Fetched providers', providers)
+            return providers
         except Exception as e:
             print('Error fetching providers', str(e))
             raise e

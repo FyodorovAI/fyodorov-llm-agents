@@ -99,17 +99,26 @@ class MCPTool():
             raise e
 
     @staticmethod
-    async def get_all_in_db(access_token: str, user_id: str = None, limit: int = 10, created_at_lt: datetime = datetime.now()) -> list[ToolModel]:
+    async def get_all_in_db(access_token: str, limit: int = 10, created_at_lt: datetime = datetime.now(), user_id: str = None) -> list[ToolModel]:
         try:
             supabase = get_supabase(access_token)
             print('getting tools from db for user', user_id)
             tools = []
-            result = supabase.from_('mcp_tools') \
-                .select("*") \
-                .limit(limit) \
-                .lt('created_at', created_at_lt) \
-                .order('created_at', desc=True) \
-                .execute()
+            if user_id:
+                result = supabase.from_('mcp_tools') \
+                    .select("*") \
+                    .eq('user_id', user_id) \
+                    .limit(limit) \
+                    .lt('created_at', created_at_lt) \
+                    .order('created_at', desc=True) \
+                    .execute()
+            else:
+                result = supabase.from_('mcp_tools') \
+                    .select("*") \
+                    .limit(limit) \
+                    .lt('created_at', created_at_lt) \
+                    .order('created_at', desc=True) \
+                    .execute()
             for tool in result.data:
                 tool["id"] = str(tool["id"])
                 tool["user_id"] = str(tool["user_id"])
