@@ -1,5 +1,5 @@
-from pydantic import BaseModel, HttpUrl
-from typing import Literal
+from pydantic import BaseModel, validator
+from fyodorov_llm_agents.providers.provider_model import Provider as ProviderTypes
 
 class LLMModel(BaseModel):
     id: int | None = None
@@ -11,6 +11,12 @@ class LLMModel(BaseModel):
     input_cost_per_token: float | None = None
     output_cost_per_token: float | None = None
     max_tokens: int | None = None
+
+    @validator('provider')
+    def validate_provider(cls, v):
+        if v not in ProviderTypes:
+            raise ValueError('Invalid provider')
+        return str(v)
 
     def to_dict(self):
         return {
