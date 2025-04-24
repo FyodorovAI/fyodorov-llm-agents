@@ -72,7 +72,7 @@ class Agent(BaseModel):
         #     'rag': self.rag,
         # }
 
-    def call_with_fn_calling(self, input: str = "", history = [], user_id: str = "") -> dict:
+    async def call_with_fn_calling(self, input: str = "", history = [], user_id: str = "") -> dict:
         litellm.set_verbose = True
         model = self.model
         # Set environmental variable
@@ -101,7 +101,7 @@ class Agent(BaseModel):
         mcp_tools = []
         for tool in self.tools:
             try:
-                tool_instance = ToolService.get_by_name_and_user_id(tool, user_id)
+                tool_instance = await ToolService.get_by_name_and_user_id(tool, user_id)
                 mcp_tools.append(tool_instance)
             except Exception as e:
                 print(f"Error fetching tool {tool}: {e}")

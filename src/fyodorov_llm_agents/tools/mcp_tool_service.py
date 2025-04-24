@@ -5,18 +5,18 @@ from .mcp_tool_model import MCPTool as ToolModel
 class MCPTool():
 
     @staticmethod
-    def create_or_update_in_db(access_token: str, tool: ToolModel, user_id: str) -> str:
+    async def create_or_update_in_db(access_token: str, tool: ToolModel, user_id: str) -> str:
         print(f"Creating or updating tool with handle {tool.handle} for user {user_id}")
-        tool_w_id = MCPTool.get_by_name_and_user_id(access_token, tool.handle, user_id)
+        tool_w_id = await MCPTool.get_by_name_and_user_id(access_token, tool.handle, user_id)
         if tool_w_id:
             print(f"Tool with handle {tool.handle} already exists, updating it.")
-            return MCPTool.update_in_db(access_token, tool_w_id.id, tool)
+            return await MCPTool.update_in_db(access_token, tool_w_id.id, tool)
         else:
             print(f"Tool with handle {tool.handle} does not exist, creating it.")
-            return MCPTool.create_in_db(access_token, tool, user_id)
+            return await MCPTool.create_in_db(access_token, tool, user_id)
 
     @staticmethod    
-    def create_in_db(access_token: str, tool: ToolModel, user_id: str) -> str:
+    async def create_in_db(access_token: str, tool: ToolModel, user_id: str) -> str:
         try:
             supabase = get_supabase(access_token)
             tool_dict = tool.to_dict()
@@ -29,6 +29,7 @@ class MCPTool():
                 del tool_dict['updated_at']
             print('creating tool in db', tool_dict)
             result = supabase.table('mcp_tools').insert(tool_dict).execute()
+            print('created tool in db', result)
             tool_id = result.data[0]['id']
             return tool_id
         except Exception as e:
@@ -36,7 +37,7 @@ class MCPTool():
             raise e
 
     @staticmethod
-    def update_in_db(access_token: str, id: str, tool: ToolModel) -> dict:
+    async def update_in_db(access_token: str, id: str, tool: ToolModel) -> dict:
         if not id:
             raise ValueError('Tool ID is required')
         try:
@@ -50,7 +51,7 @@ class MCPTool():
             raise
 
     @staticmethod
-    def delete_in_db(access_token: str, id: str) -> bool:
+    async def delete_in_db(access_token: str, id: str) -> bool:
         if not id:
             raise ValueError('Tool ID is required')
         try:
@@ -63,7 +64,7 @@ class MCPTool():
             raise e
 
     @staticmethod
-    def get_in_db(access_token: str, id: str) -> ToolModel:
+    async def get_in_db(access_token: str, id: str) -> ToolModel:
         if not id:
             raise ValueError('Tool ID is required')
         try:
@@ -77,7 +78,7 @@ class MCPTool():
             raise e
 
     @staticmethod
-    def get_by_name_and_user_id(access_token: str, handle: str, user_id: str) -> ToolModel:
+    async def get_by_name_and_user_id(access_token: str, handle: str, user_id: str) -> ToolModel:
         try:
             supabase = get_supabase(access_token)
             result = supabase.table('mcp_tools').select('*').eq('user_id', user_id).eq('handle', handle).limit(1).execute()
@@ -95,7 +96,7 @@ class MCPTool():
             raise e
 
     @staticmethod
-    def get_all_in_db(access_token: str, user_id: str = None, limit: int = 10, created_at_lt: datetime = datetime.now()) -> list[dict]:
+    async def get_all_in_db(access_token: str, user_id: str = None, limit: int = 10, created_at_lt: datetime = datetime.now()) -> list[dict]:
         try:
             supabase = get_supabase(access_token)
             print('getting tools from db for user', user_id)
@@ -121,7 +122,7 @@ class MCPTool():
             raise e
 
     @staticmethod
-    def get_tool_agents(access_token: str, id: str) -> list[int]:
+    async def get_tool_agents(access_token: str, id: str) -> list[int]:
         if not id:
             raise ValueError('Tool ID is required')
         try:
@@ -134,7 +135,7 @@ class MCPTool():
             raise
 
     @staticmethod
-    def set_tool_agents(access_token: str, id: str, agent_ids: list[int]) -> list[int]:
+    async def set_tool_agents(access_token: str, id: str, agent_ids: list[int]) -> list[int]:
         if not id:
             raise ValueError('Tool ID is required')
         try:

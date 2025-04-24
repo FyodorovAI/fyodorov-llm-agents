@@ -28,10 +28,10 @@ class Instance(InstanceModel):
         agent.api_url = provider.api_url
         for index, tool in enumerate(agent.tools):
             if isinstance(tool, str):
-                agent.tools[index] = ToolService.get_by_name_and_user_id(access_token, tool, user_id)
+                agent.tools[index] = await ToolService.get_by_name_and_user_id(access_token, tool, user_id)
                 print(f"Tool fetched via Tool.get_by_name_and_user_id in chat_w_fn_calls: {agent.tools[index]}")
                 agent.prompt += f"\n\n{agent.tools[index].handle}: {agent.tools[index].description}\n\n"
-        res = agent.call_with_fn_calling(input=input, history=self.chat_history, user_id=user_id)
+        res = await agent.call_with_fn_calling(input=input, history=self.chat_history, user_id=user_id)
         self.chat_history.append({
             "role": "user",
             "content": input
