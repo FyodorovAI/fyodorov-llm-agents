@@ -152,25 +152,29 @@ class Instance(InstanceModel):
     def get_all_in_db(limit: int = 10, created_at_lt: datetime = datetime.now(), user_id: str = None) -> list[InstanceModel]:
         try:
             supabase = get_supabase()
-            if user_id:
-                result = supabase.from_('instances') \
-                    .select("*") \
-                    .eq('user_id', user_id) \
-                    .limit(limit) \
-                    .lt('created_at', created_at_lt) \
-                    .order('created_at', desc=True) \
-                    .execute()
-            else:
-                result = supabase.from_('instances') \
-                    .select("*") \
-                    .limit(limit) \
-                    .lt('created_at', created_at_lt) \
-                    .order('created_at', desc=True) \
-                    .execute()
-            if not result.data:
+            agents = Agent.get_all_in_db(limit=limit, created_at_lt=created_at_lt, user_id=user_id)
+            if not agents:
+                print("No agents found")
                 return []
-            instance_models = [InstanceModel(**{k: str(v) if not isinstance(v, list) else v for k, v in instance.items()}) for instance in result.data]
-            return instance_models
+            agent_ids = [agent.id for agent in agents]
+            print(f"Agent IDs: {agent_ids}")
+            if not agent_ids:
+                print("No agent IDs found")
+                return []
+            instances = []
+            for agent in agents:
+                result = supabase.from_('instances') \
+                    .select("*") \
+                    .eq('agent_id', agent.id) \
+                    .limit(limit) \
+                    .lt('created_at', created_at_lt) \
+                    .order('created_at', desc=True) \
+                    .execute()
+                if not result.data:
+                    continue
+                instance_models = [InstanceModel(**{k: str(v) if not isinstance(v, list) else v for k, v in instance.items()}) for instance in result.data]
+                instances.append(instance_models)
+            return instances
         except Exception as e:
             print('[Instance.get_all_in_db] Error fetching instances', str(e))
             raise e
