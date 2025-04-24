@@ -12,12 +12,6 @@ class LLMModel(BaseModel):
     output_cost_per_token: float | None = None
     max_tokens: int | None = None
 
-    @validator('provider')
-    def validate_provider(cls, v):
-        if v not in ProviderTypes:
-            raise ValueError('Invalid provider')
-        return str(v)
-
     def to_dict(self):
         return {
             'name': self.name,
