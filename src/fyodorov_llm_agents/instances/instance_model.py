@@ -5,8 +5,8 @@ MAX_TITLE_LENGTH = 80
 VALID_CHARACTERS_REGEX = r'^[a-zA-Z0-9\s.,!?:;\'"-]+$'
 
 class InstanceModel(BaseModel):
-    id: str = Field(None, alias='id')
-    agent_id: str # Links to AgentModel.id
+    id: int = Field(None, alias='id')
+    agent_id: int # Links to AgentModel.id
     title: str = ""
     chat_history: list[dict] = []
 

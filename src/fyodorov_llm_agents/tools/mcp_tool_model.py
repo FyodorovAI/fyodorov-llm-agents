@@ -26,7 +26,7 @@ class MCPTool(BaseModel):
     handle: Optional[str] = None
     description: Optional[str] = Field(None, max_length=MAX_DESCRIPTION_LENGTH)
     logo_url: Optional[str] = None                    # stored as text; could be a URL
-    user_id: Optional[str] = None                     # uuid
+    user_id: Optional[int] = None                     # uuid
 
     public: Optional[bool] = False
     api_type: Optional[str] = None

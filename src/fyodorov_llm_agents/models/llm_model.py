@@ -2,7 +2,7 @@ from pydantic import BaseModel, HttpUrl
 from typing import Literal
 
 class LLMModel(BaseModel):
-    id: str | None = None
+    id: int | None = None
     name: str
     provider: str
     params: dict | None = None

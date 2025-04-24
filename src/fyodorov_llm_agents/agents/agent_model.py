@@ -18,7 +18,7 @@ class Agent(BaseModel):
     tools: list[str] = []
     rag: list[dict] = []
     model: str | None = None
-    modelid: str | None = None
+    model_id: int | None = None
     name: str = "My Agent"
     description: str = "My Agent Description"
     prompt: str = "My Prompt"
@@ -71,6 +71,7 @@ class Agent(BaseModel):
         #     'tools': self.tools,
         #     'rag': self.rag,
         # }
+
 
     async def call_with_fn_calling(self, input: str = "", history = [], user_id: str = "") -> dict:
         litellm.set_verbose = True

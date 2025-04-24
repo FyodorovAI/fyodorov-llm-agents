@@ -4,7 +4,7 @@ from typing import Literal
 Provider = Literal['openai', 'mistral', 'ollama', 'openrouter']
 
 class ProviderModel(BaseModel):
-    id: str | None = None
+    id: int | None = None
     name: Provider
     api_key: str | None = None
     api_url: HttpUrl | None = None
