@@ -36,8 +36,9 @@ NEW_VERSION=$(awk -F'"' '/^version =/ { print $2 }' $FILE)
 # Function to bump version in requirements.txt and reinstall requirements
 bump_and_reinstall() {
     DIRECTORY=$1
+    FILE=${2:-Dockerfile}
     echo "Bumping and reinstalling lib in $DIRECTORY/requirements.txt to version $NEW_VERSION..."
-    sed -i '' -E "s/fyodorov_llm_agents==.*/fyodorov_llm_agents==$NEW_VERSION/" $DIRECTORY/requirements.txt
+    sed -i '' -E "s/fyodorov_llm_agents==.*/fyodorov_llm_agents==$NEW_VERSION/" $DIRECTORY/$FILE
     source $DIRECTORY/venv/bin/activate && pip install --force-reinstall fyodorov_llm_agents==$NEW_VERSION && deactivate
     # Check if the directory ends in /src
     if [[ $DIRECTORY == */src ]]; then
@@ -48,8 +49,8 @@ bump_and_reinstall() {
     cd $BASE
 }
 
-bump_and_reinstall $BASE/../Tsiolkovsky/src
-bump_and_reinstall $BASE/../Gagarin/src
-bump_and_reinstall $BASE/../Dostoyevsky/src
+bump_and_reinstall $BASE/../Tsiolkovsky
+bump_and_reinstall $BASE/../Gagarin
+bump_and_reinstall $BASE/../Dostoyevsky
 
 date
