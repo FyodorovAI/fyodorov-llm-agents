@@ -4,7 +4,7 @@ from fyodorov_llm_agents.providers.provider_model import Provider as ProviderTyp
 class LLMModel(BaseModel):
     id: int | None = None
     name: str
-    provider: int | None = None
+    provider: str | None = None
     params: dict | None = None
     mode: str = 'chat'
     base_model: str

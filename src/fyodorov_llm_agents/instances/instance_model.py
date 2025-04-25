@@ -33,7 +33,7 @@ class InstanceModel(BaseModel):
             'chat_history': self.chat_history,
         }
         if self.id is not None:
-            data['id'] = str(self.id)
+            data['id'] = self.id
         return data
 
     @staticmethod
