@@ -21,6 +21,12 @@ class ProviderModel(BaseModel):
             dict['id'] = self.id
         return dict
 
+    def resource_dict(self) -> dict:
+        return {
+            'id': self.id,
+            'name': self.name,
+        }
+
     def from_dict(data):
         name = data['name'] if 'name' in data else None
         api_url = data['api_url'] if 'api_url' in data else None

@@ -18,6 +18,13 @@ class InstanceModel(BaseModel):
             return False
         else:
             return True
+        
+    def resource_dict(self) -> dict:
+        return {
+            'id': self.id,
+            'agent_id': self.agent_id,
+            'title': self.title,
+        }
 
     def to_dict(self) -> dict:
         data = {

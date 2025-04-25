@@ -26,7 +26,7 @@ class MCPTool(BaseModel):
     handle: Optional[str] = None
     description: Optional[str] = Field(None, max_length=MAX_DESCRIPTION_LENGTH)
     logo_url: Optional[str] = None                    # stored as text; could be a URL
-    user_id: Optional[int] = None                     # uuid
+    user_id: Optional[str] = None                     # uuid
 
     public: Optional[bool] = False
     api_type: Optional[str] = None
@@ -50,6 +50,13 @@ class MCPTool(BaseModel):
             self._validate_description(self.description)
         # Add more validations as desired...
         return True
+
+    def resource_dict(self) -> dict:
+        return {
+            'id': self.id,
+            'name': self.name,
+            'description': self.description,
+        }
 
     @staticmethod
     def _validate_name(name: str) -> None:

@@ -131,7 +131,7 @@ class MCPTool():
                         tools.append(tool_model)
                     else:
                         print(f"Invalid tool data: {tool}")
-            print('got tools from db', len(tools))
+            print(f"got {len(tools)} tools from db")
             return tools
         except Exception as e:
             print('Error fetching tools', str(e))

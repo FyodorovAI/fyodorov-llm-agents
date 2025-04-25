@@ -32,6 +32,14 @@ class Agent(BaseModel):
         Agent.validate_description(self.description)
         Agent.validate_prompt(self.prompt, self.prompt_size)
 
+    def resource_dict(self) -> dict:
+        return {
+            'id': self.id,
+            'created_at': self.created_at,
+            'name': self.name,
+            'description': self.description,
+        }
+
     @staticmethod
     def validate_name(name: str) -> str:
         if not name:

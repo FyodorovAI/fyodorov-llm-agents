@@ -23,6 +23,13 @@ class LLMModel(BaseModel):
             'output_cost_per_token': self.output_cost_per_token,
             'max_tokens': self.max_tokens
         }
+    
+    def resource_dict(self) -> dict:
+        return {
+            'id': self.id,
+            'name': self.name,
+            'provider': self.provider,
+        }
 
     @staticmethod
     def from_dict(data) -> 'LLMModel':
