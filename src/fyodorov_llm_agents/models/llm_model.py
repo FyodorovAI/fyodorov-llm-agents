@@ -5,6 +5,7 @@ class LLMModel(BaseModel):
     id: int | None = None
     name: str
     provider: str | None = None
+    provider_id: int | None = None
     params: dict | None = None
     mode: str = 'chat'
     base_model: str

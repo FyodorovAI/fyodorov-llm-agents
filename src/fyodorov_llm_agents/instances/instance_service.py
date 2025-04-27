@@ -69,8 +69,8 @@ class Instance(InstanceModel):
                     raise ValueError('Error creating instance in DB')
                 print(f"Result of creating instance in DB: {result}")
                 instance_dict = result.data[0]
-            instance_dict["id"] = str(instance_dict["id"])
-            instance_dict["agent_id"] = str(instance_dict["agent_id"])
+                instance_dict['title'] = f"{instance_dict['title']} {instance_dict['id']}"
+                await Instance.update_in_db(instance_dict['id'], instance_dict)
             return instance_dict
         except Exception as e:
             print(f"An error occurred while creating instance: {e}")
@@ -90,7 +90,6 @@ class Instance(InstanceModel):
             result = supabase.table('instances').update(instance).eq('id', id).execute()
             print(f"Result of update: {result}")
             instance_dict = result.data[0]
-            instance_dict["id"] = str(instance_dict["id"])
             return instance_dict
         except Exception as e:
             print('An error occurred while updating instance:', id, str(e))
@@ -124,8 +123,6 @@ class Instance(InstanceModel):
                 print(f"No instance found with the given title {title} and agent ID {agent_id}: {result}")
                 return None
             instance_dict = result.data[0]
-            instance_dict["agent_id"] = str(instance_dict["agent_id"])
-            instance_dict["id"] = str(instance_dict["id"])
             print(f"Fetched instance: {instance_dict}")
             return instance_dict
         except Exception as e:
@@ -133,14 +130,12 @@ class Instance(InstanceModel):
             raise e
 
     @staticmethod
-    async def get_in_db(id: str) -> InstanceModel:
+    async def get_in_db(id: int) -> InstanceModel:
         if not id:
             raise ValueError('Instance ID is required')
         try:
             result = supabase.table('instances').select('*').eq('id', id).limit(1).execute()
             instance_dict = result.data[0]
-            instance_dict["agent_id"] = str(instance_dict["agent_id"])
-            instance_dict["id"] = str(instance_dict["id"])
             print(f"Fetched instance: {instance_dict}")
             instance = InstanceModel(**instance_dict)
             return instance
@@ -172,7 +167,7 @@ class Instance(InstanceModel):
                     .execute()
                 if not result.data:
                     continue
-                instance_models = [InstanceModel(**{k: str(v) if not isinstance(v, list) else v for k, v in instance.items()}) for instance in result.data]
+                instance_models = [InstanceModel(**instance) for instance in result.data]
                 instances.extend(instance_models)
             return instances
         except Exception as e:

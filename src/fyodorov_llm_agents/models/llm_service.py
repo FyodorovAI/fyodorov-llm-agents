@@ -97,6 +97,13 @@ class LLM(LLMModel):
                             .lt('created_at', created_at_lt) \
                             .execute()
                 data = result.data
+            if not data:
+                print("No models found")
+                return []
+            for model in data:
+                if 'provider' in model and type(model['provider']) is int:
+                    model['provider_id'] = model['provider']
+                    del model['provider']
             models = [LLMModel(**model) for model in data]
             print('Fetched models', models)
             return models

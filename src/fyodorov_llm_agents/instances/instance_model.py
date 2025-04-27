@@ -28,7 +28,7 @@ class InstanceModel(BaseModel):
 
     def to_dict(self) -> dict:
         data = {
-            'agent_id': str(self.agent_id),
+            'agent_id': self.agent_id,
             'title': self.title,
             'chat_history': self.chat_history,
         }

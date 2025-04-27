@@ -141,9 +141,6 @@ class Provider(ProviderModel):
                             .lt('created_at', created_at_lt) \
                             .execute()
                 data = result.data
-            for provider in data:
-                provider['id'] = str(provider['id'])
-                provider['user_id'] = str(provider['user_id'])
             providers = [ProviderModel(**provider) for provider in data]
             print('Fetched providers', providers)
             return providers
