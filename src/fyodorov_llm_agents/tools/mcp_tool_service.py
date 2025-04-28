@@ -99,9 +99,9 @@ class MCPTool():
             raise e
 
     @staticmethod
-    async def get_all_in_db(access_token: str, limit: int = 10, created_at_lt: datetime = datetime.now(), user_id: str = None) -> list[ToolModel]:
+    async def get_all_in_db(limit: int = 10, created_at_lt: datetime = datetime.now(), user_id: str = None) -> list[ToolModel]:
         try:
-            supabase = get_supabase(access_token)
+            supabase = get_supabase()
             print('getting tools from db for user', user_id)
             tools = []
             if user_id:
