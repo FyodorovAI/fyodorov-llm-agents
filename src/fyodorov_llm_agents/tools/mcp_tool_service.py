@@ -59,6 +59,7 @@ class MCPTool():
             raise ValueError('Tool ID is required')
         try:
             supabase = get_supabase(access_token)
+            print(f"Deleting tool with ID {id}")
             result = supabase.table('mcp_tools').delete().eq('id', id).execute()
             print('Deleted tool', result)
             return True
