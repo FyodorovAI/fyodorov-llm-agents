@@ -17,3 +17,9 @@ build:
 	python3 -m build
 
 release: build publish
+
+lint:
+	ruff check src/fyodorov_llm_agents/
+
+format:
+	ruff format src/fyodorov_llm_agents/
