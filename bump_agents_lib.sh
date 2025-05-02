@@ -46,5 +46,6 @@ bump_and_reinstall() {
 bump_and_reinstall $BASE/../Tsiolkovsky
 bump_and_reinstall $BASE/../Gagarin
 bump_and_reinstall $BASE/../Dostoyevsky
+bump_and_reinstall $BASE/../fyodorov_utils src/fyodorov_utils/requirements.txt
 
 date
