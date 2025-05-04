@@ -37,6 +37,8 @@ class Provider(ProviderModel):
                     provider.api_url = "http://localhost:11434/v1"
                 elif provider.name == "openrouter":
                     provider.api_url = "https://openrouter.ai/api/v1"
+                elif provider.name == "gemini" or provider.name == "google":
+                    provider.api_url = "https://api.gemini.com/v1"
                 else:
                     raise ValueError('No URL provided when creating a provider')
             print('Setting provider api_url to', provider.api_url)
