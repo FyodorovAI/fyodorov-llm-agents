@@ -1,7 +1,10 @@
 import re
+import requests
+import yaml
 from pydantic import BaseModel, HttpUrl
 from typing import Optional
-from fyodorov_llm_agents.tools.mcp_tool_service import MCPTool as ToolService
+from fyodorov_llm_agents.models.llm_model import LLMModel
+from fyodorov_llm_agents.providers.provider_model import ProviderModel
 from datetime import datetime
 
 MAX_NAME_LENGTH = 80
@@ -15,8 +18,8 @@ class Agent(BaseModel):
     api_url: HttpUrl | None = None
     tools: list[str] = []
     rag: list[dict] = []
-    model: str | None = None
-    model_id: int | None = None
+    model: LLMModel | None = None
+    provider: ProviderModel | None = None
     name: str = "My Agent"
     description: str = "My Agent Description"
     prompt: str = "My Prompt"

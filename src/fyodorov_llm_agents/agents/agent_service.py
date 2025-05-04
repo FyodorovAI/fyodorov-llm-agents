@@ -4,9 +4,9 @@ from supabase import Client
 import litellm
 from fyodorov_utils.config.supabase import get_supabase
 from fyodorov_llm_agents.agents.agent_model import Agent as AgentModel
-from fyodorov_llm_agents.tools.tool import Tool as ToolModel
+from fyodorov_llm_agents.tools.mcp_tool_model import MCPTool as ToolModel
+from fyodorov_llm_agents.tools.mcp_tool_service import MCPTool as ToolService
 from fyodorov_llm_agents.models.llm_service import LLM
-from fyodorov_llm_agents.providers.provider_service import Provider
 
 supabase: Client = get_supabase()
 
@@ -71,10 +71,9 @@ class Agent(AgentModel):
             result = supabase.table('agents').select('*').eq('id', id).limit(1).execute()
             agent_dict = result.data[0]
             print(f"Fetched agent: {agent_dict}")
-            agent_dict["modelid"] = str(agent_dict["model_id"])
-            model = await LLM.get_model(id = agent_dict["modelid"])
-            agent_dict['model'] = model.name
+            model = await LLM.get_model(id = agent_dict["model_id"])
             agent = AgentModel(**agent_dict)
+            agent.model = model
             return agent
         except Exception as e:
             print('Error fetching agent', str(e))
@@ -172,36 +171,29 @@ class Agent(AgentModel):
     async def call_with_fn_calling(self, input: str = "", history = [], user_id: str = "") -> dict:
         print('call_with_fn_calling')
         litellm.set_verbose = True
-        model = self.model
         # Set environmental variable
-        if self.model_id:
-            model_instance = await LLM.get_model(user_id, id = self.model_id)
-            model = model_instance.base_model
-            provider = await Provider.get_provider_by_id(model_instance.provider_id)
-            print(f"Provider fetched via Provider.get_provider_by_id in call_with_fn_calling: {provider}")
-        else:
-            print(f"Model ID not set on Agent {self.id}, using assumptions")
-        if provider:
-            self.api_key = provider.api_key
-            self.api_url = provider.api_url
-            if provider.name == "gemini":
-                model = 'gemini/'+self.model
+        print(f"[call_with_fn_calling] self.model: {self.model}")
+        if self.provider:
+            self.api_key = self.provider.api_key
+            self.api_url = self.provider.api_url
+            if self.provider.name == "gemini":
+                model = 'gemini/'+self.model.name
                 os.environ["GEMINI_API_KEY"] = self.api_key
         elif self.api_key.startswith('sk-'):
-            model = 'openai/'+self.model
+            model = 'openai/'+self.model.name
             os.environ["OPENAI_API_KEY"] = self.api_key
             self.api_url = "https://api.openai.com/v1"
         elif self.api_key and self.api_key != '':
-            model = 'mistral/'+self.model
+            model = 'mistral/'+self.model.name
             os.environ["MISTRAL_API_KEY"] = self.api_key
             self.api_url = "https://api.mistral.ai/v1"
         else:
             print("Provider Ollama")
-            model = 'ollama/'+self.model
+            model = 'ollama/'+self.model.name
             if self.api_url is None:
                 self.api_url = "https://api.ollama.ai/v1"
 
-        base_url = str(self.api_url.rstrip('/'))
+        base_url = str(self.api_url).rstrip('/')
         messages: list[dict] = [
             {"content": self.prompt, "role": "system"},
             *history,

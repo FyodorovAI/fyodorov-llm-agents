@@ -54,12 +54,12 @@ class LLM(LLMModel):
             raise e
 
     @staticmethod
-    async def get_model(user_id: str = None, name: str = None, id: str = None) -> LLMModel:
+    async def get_model(user_id: str = None, name: str = None, id: int = None) -> LLMModel:
         try:
             supabase = get_supabase()
             if id:
                 print(f"Getting model with id: {id}")
-                result = supabase.table('models').select('*').eq('id', id).execute()
+                result = supabase.table('models').select('*').eq('id', str(id)).execute()
             elif user_id and name:
                 print(f"Getting model with name: {name} and user_id: {user_id}")
                 result = supabase.table('models').select('*').eq('user_id', user_id).eq('name', name).execute()
