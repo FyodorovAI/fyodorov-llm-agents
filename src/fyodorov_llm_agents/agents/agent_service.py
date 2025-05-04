@@ -1,13 +1,22 @@
 from datetime import datetime
+import os
 from supabase import Client
-from fyodorov_llm_agents.agents.agent_model import Agent as AgentModel
+import litellm
 from fyodorov_utils.config.supabase import get_supabase
+from fyodorov_llm_agents.agents.agent_model import Agent as AgentModel
 from fyodorov_llm_agents.tools.tool import Tool as ToolModel
 from fyodorov_llm_agents.models.llm_service import LLM
+from fyodorov_llm_agents.providers.provider_service import Provider
 
 supabase: Client = get_supabase()
 
 class Agent(AgentModel):
+
+    def __init__(self, agent: AgentModel):
+        super().__init__(
+            **agent.to_dict()
+        )
+
     @staticmethod    
     async def create_in_db(access_token: str, agent: AgentModel) -> str:
         try:
@@ -63,7 +72,7 @@ class Agent(AgentModel):
             agent_dict = result.data[0]
             print(f"Fetched agent: {agent_dict}")
             agent_dict["modelid"] = str(agent_dict["model_id"])
-            model = await LLM.get_model(access_token=access_token, id = agent_dict["modelid"])
+            model = await LLM.get_model(id = agent_dict["modelid"])
             agent_dict['model'] = model.name
             agent = AgentModel(**agent_dict)
             return agent
@@ -105,7 +114,7 @@ class Agent(AgentModel):
         agent = AgentModel.from_dict(data)
         agent_dict = agent.to_dict()
         model_name = data['model']
-        model = await LLM.get_model(access_token, user_id, model_name)
+        model = await LLM.get_model(user_id, model_name)
         if model:
             agent_dict['model_id'] = model.id
         del agent_dict['model']
@@ -159,3 +168,100 @@ class Agent(AgentModel):
         except Exception as e:
             print('Error deleting agent tool', str(e))
             raise e
+
+    async def call_with_fn_calling(self, input: str = "", history = [], user_id: str = "") -> dict:
+        print('call_with_fn_calling')
+        litellm.set_verbose = True
+        model = self.model
+        # Set environmental variable
+        if self.model_id:
+            model_instance = await LLM.get_model(user_id, id = self.model_id)
+            model = model_instance.base_model
+            provider = await Provider.get_provider_by_id(model.provider_id)
+            print(f"Provider fetched via Provider.get_provider_by_id in call_with_fn_calling: {provider}")
+        else:
+            print(f"Model ID not set on Agent {self.id}, using assumptions")
+        if provider:
+            self.api_key = provider.api_key
+            self.api_url = provider.api_url
+            if provider.name == "gemini":
+                model = 'gemini/'+self.model
+                os.environ["GEMINI_API_KEY"] = self.api_key
+        elif self.api_key.startswith('sk-'):
+            model = 'openai/'+self.model
+            os.environ["OPENAI_API_KEY"] = self.api_key
+            self.api_url = "https://api.openai.com/v1"
+        elif self.api_key and self.api_key != '':
+            model = 'mistral/'+self.model
+            os.environ["MISTRAL_API_KEY"] = self.api_key
+            self.api_url = "https://api.mistral.ai/v1"
+        else:
+            print("Provider Ollama")
+            model = 'ollama/'+self.model
+            if self.api_url is None:
+                self.api_url = "https://api.ollama.ai/v1"
+
+        base_url = str(self.api_url.rstrip('/'))
+        messages: list[dict] = [
+            {"content": self.prompt, "role": "system"},
+            *history,
+            { "content": input, "role": "user"},
+        ]
+        # tools
+        print(f"Tools: {self.tools}")
+        mcp_tools = []
+        for tool in self.tools:
+            try:
+                tool_instance = await ToolService.get_by_name_and_user_id(tool, user_id)
+                mcp_tools.append(tool_instance)
+            except Exception as e:
+                print(f"Error fetching tool {tool}: {e}")
+        
+        tool_schemas = [tool.get_function() for tool in mcp_tools]
+        print(f"Tool schemas: {tool_schemas}")
+        if tool_schemas:
+            print(f"calling litellm with model {model}, messages: {messages}, max_retries: 0, history: {history}, base_url: {base_url}, tools: {tool_schemas}")
+            response = litellm.completion(model=model, messages=messages, max_retries=0, base_url=base_url)
+        else:     
+            print(f"calling litellm with model {model}, messages: {messages}, max_retries: 0, history: {history}, base_url: {base_url}")
+            response = litellm.completion(model=model, messages=messages, max_retries=0, base_url=base_url)
+        print(f"Response: {response}")
+
+        message = response.choices[0].message
+
+        if hasattr(message, "tool_calls") and message.tool_calls:
+            tool_call = message.tool_calls[0]
+            fn_name = tool_call.function.name
+            args = tool_call.function.arguments
+
+            mcp_tool = mcp_tools.get(fn_name)
+            if not mcp_tool:
+                raise ValueError(f"Tool '{fn_name}' not found in loaded MCP tools")
+
+            tool_output = mcp_tool.call(args)
+
+            messages.append({
+                "role": "assistant",
+                "content": None,
+                "tool_calls": [tool_call],
+            })
+            messages.append({
+                "role": "tool",
+                "tool_call_id": tool_call.id,
+                "content": tool_output,
+            })
+
+            followup = litellm.completion(
+                model=model,
+                messages=messages,
+                max_retries=0,
+                base_url=base_url,
+            )
+            return {"answer": followup.choices[0].message.content}
+        
+        answer = message.content
+        print(f"Answer: {answer}")
+        return {
+            "answer": answer,
+
+        }

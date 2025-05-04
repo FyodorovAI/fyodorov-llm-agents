@@ -54,9 +54,9 @@ class LLM(LLMModel):
             raise e
 
     @staticmethod
-    async def get_model(access_token: str, user_id: str = None, name: str = None, id: str = None) -> LLMModel:
+    async def get_model(user_id: str = None, name: str = None, id: str = None) -> LLMModel:
         try:
-            supabase = get_supabase(access_token)
+            supabase = get_supabase()
             if id:
                 print(f"Getting model with id: {id}")
                 result = supabase.table('models').select('*').eq('id', id).execute()

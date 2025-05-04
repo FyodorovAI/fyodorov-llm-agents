@@ -19,19 +19,21 @@ class Instance(InstanceModel):
 
     async def chat_w_fn_calls(self, input: str = "", access_token: str = JWT, user_id: str = "") -> str:
         agent: AgentModel = await Agent.get_in_db(access_token=access_token, id = self.agent_id)
-        model: LLMModel = await LLM.get_model(access_token, user_id, id = agent.model_id)
+        model: LLMModel = await LLM.get_model(user_id, id = agent.model_id)
         print(f"Model fetched via LLM.get_model in chat_w_fn_calls: {model}")
         provider: Provider = await Provider.get_provider_by_id(access_token, id = model.provider)
         agent.prompt = f"{agent.prompt}\n\n{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n"
         agent.model = model.base_model
         agent.api_key = provider.api_key
         agent.api_url = provider.api_url
+        print(f"Iterating over agent tools in chat_w_fn_calls: {agent.tools}")
         for index, tool in enumerate(agent.tools):
             if isinstance(tool, str):
                 agent.tools[index] = await ToolService.get_by_name_and_user_id(access_token, tool, user_id)
                 print(f"Tool fetched via Tool.get_by_name_and_user_id in chat_w_fn_calls: {agent.tools[index]}")
                 agent.prompt += f"\n\n{agent.tools[index].handle}: {agent.tools[index].description}\n\n"
-        res = await agent.call_with_fn_calling(input=input, history=self.chat_history, user_id=user_id)
+        agent_service = Agent(agent)
+        res = await agent_service.call_with_fn_calling(input=input, history=self.chat_history, user_id=user_id)
         self.chat_history.append({
             "role": "user",
             "content": input

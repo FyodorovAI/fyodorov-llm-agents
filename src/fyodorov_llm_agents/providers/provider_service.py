@@ -81,7 +81,7 @@ class Provider(ProviderModel):
             supabase = get_supabase(access_token)
             result = supabase.table('providers').select('*').eq('id', id).limit(1).execute()
             provider_dict = result.data[0]
-            print('Fetched provider', provider_dict)
+            print('[get_provider_by_id] Fetched provider', provider_dict)
             provider_dict['id'] = str(provider_dict['id'])
             provider = ProviderModel(**provider_dict)
             return provider
@@ -108,7 +108,7 @@ class Provider(ProviderModel):
                 print('Provider not found')
                 return None
             provider_dict = result.data[0]
-            print('Fetched provider', provider_dict)
+            print('[get_provider] Fetched provider', provider_dict)
             provider_dict['id'] = str(provider_dict['id'])
             provider = ProviderModel(**provider_dict)
             return provider
