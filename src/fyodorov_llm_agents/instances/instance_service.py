@@ -21,7 +21,7 @@ class Instance(InstanceModel):
         agent: AgentModel = await Agent.get_in_db(access_token=access_token, id = self.agent_id)
         model: LLMModel = await LLM.get_model(user_id, id = agent.model_id)
         print(f"Model fetched via LLM.get_model in chat_w_fn_calls: {model}")
-        provider: Provider = await Provider.get_provider_by_id(access_token, id = model.provider)
+        provider: Provider = await Provider.get_provider_by_id(id = model.provider)
         agent.prompt = f"{agent.prompt}\n\n{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n"
         agent.model = model.base_model
         agent.api_key = provider.api_key

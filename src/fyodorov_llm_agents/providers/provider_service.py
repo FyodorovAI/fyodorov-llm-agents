@@ -74,11 +74,11 @@ class Provider(ProviderModel):
             raise e
 
     @staticmethod
-    async def get_provider_by_id(access_token: str, id: str) -> ProviderModel:
+    async def get_provider_by_id(id: str) -> ProviderModel:
         if not id:
             raise ValueError('Provider ID is required')
         try:
-            supabase = get_supabase(access_token)
+            supabase = get_supabase()
             result = supabase.table('providers').select('*').eq('id', id).limit(1).execute()
             provider_dict = result.data[0]
             print('[get_provider_by_id] Fetched provider', provider_dict)

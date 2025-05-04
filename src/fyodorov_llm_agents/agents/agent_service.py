@@ -177,7 +177,7 @@ class Agent(AgentModel):
         if self.model_id:
             model_instance = await LLM.get_model(user_id, id = self.model_id)
             model = model_instance.base_model
-            provider = await Provider.get_provider_by_id(model.provider_id)
+            provider = await Provider.get_provider_by_id(model_instance.provider_id)
             print(f"Provider fetched via Provider.get_provider_by_id in call_with_fn_calling: {provider}")
         else:
             print(f"Model ID not set on Agent {self.id}, using assumptions")
