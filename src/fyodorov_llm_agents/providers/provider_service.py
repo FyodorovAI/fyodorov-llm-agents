@@ -104,6 +104,9 @@ class Provider(ProviderModel):
                 .eq('name', name.lower())\
                 .limit(1).execute()
             print('Result of getting provider:', result)
+            if not result or not result.data or len(result.data) == 0:
+                print('Provider not found')
+                return None
             provider_dict = result.data[0]
             print('Fetched provider', provider_dict)
             provider_dict['id'] = str(provider_dict['id'])

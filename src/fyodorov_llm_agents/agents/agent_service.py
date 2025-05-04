@@ -86,6 +86,7 @@ class Agent(AgentModel):
             else:
                 result = supabase.from_('agents') \
                     .select("*") \
+                    .eq('public', True) \
                     .limit(limit) \
                     .lt('created_at', created_at_lt) \
                     .order('created_at', desc=True) \
