@@ -55,10 +55,10 @@ class Instance(InstanceModel):
                         existing_instance[key] = value
                 if needs_update:
                     print('Instance already exists, will update:', existing_instance)
-                    instance_dict = await Instance.update_in_db(existing_instance["id"], existing_instance)
+                    instance = await Instance.update_in_db(existing_instance["id"], existing_instance)
                 else:
                     print('Instance already exists and no update needed:', existing_instance)
-                    instance_dict = existing_instance
+                    instance = InstanceModel(**existing_instance)
             else:
                 print("Creating instance in DB:", instance.to_dict())
                 result = supabase.table('instances').upsert(instance.to_dict()).execute()
@@ -68,14 +68,14 @@ class Instance(InstanceModel):
                 print(f"Result of creating instance in DB: {result}")
                 instance_dict = result.data[0]
                 instance_dict['title'] = f"{instance_dict['title']} {instance_dict['id']}"
-                await Instance.update_in_db(instance_dict['id'], instance_dict)
-            return instance_dict
+                instance = await Instance.update_in_db(instance_dict['id'], instance_dict)
+            return instance
         except Exception as e:
             print(f"An error occurred while creating instance: {e}")
             if 'code' in e and e.code == '23505':
                 print('Instance already exists')
-                instance_dict = Instance.get_by_title_and_agent(instance.title, instance.agent_id)
-                return instance_dict
+                instance = await Instance.get_by_title_and_agent(instance.title, instance.agent_id)
+                return instance
             print('Error creating instance', str(e))
             raise e
 
@@ -109,7 +109,7 @@ class Instance(InstanceModel):
             raise e
 
     @staticmethod
-    async def get_by_title_and_agent(title: str, agent_id: str) -> dict:
+    async def get_by_title_and_agent(title: str, agent_id: str) -> InstanceModel:
         if not title:
             raise ValueError('Instance title is required')
         if not agent_id:
@@ -122,7 +122,7 @@ class Instance(InstanceModel):
                 return None
             instance_dict = result.data[0]
             print(f"Fetched instance: {instance_dict}")
-            return instance_dict
+            return InstanceModel(**instance_dict)
         except Exception as e:
             print('[Instance.get_by_title_and_agent] Error fetching instance', str(e))
             raise e
