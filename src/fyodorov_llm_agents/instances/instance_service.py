@@ -18,7 +18,7 @@ JWT = "eyJhbGciOiJIUzI1NiIsImtpZCI6Im14MmVrTllBY3ZYN292LzMiLCJ0eXAiOiJKV1QifQ.ey
 class Instance(InstanceModel):
 
     async def chat_w_fn_calls(self, input: str = "", access_token: str = JWT, user_id: str = "") -> str:
-        agent: AgentModel = await Agent.get_in_db(access_token=access_token, id = self.agent_id)
+        agent: AgentModel = await Agent.get_in_db(id = self.agent_id)
         print(f"Model fetched via LLM.get_model in chat_w_fn_calls: {agent.model}")
         agent.provider = await Provider.get_provider_by_id(id = agent.model.provider)
         agent.prompt = f"{agent.prompt}\n\n{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n"

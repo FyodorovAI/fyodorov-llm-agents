@@ -63,11 +63,11 @@ class Agent(AgentModel):
             raise e
 
     @staticmethod
-    async def get_in_db(access_token: str, id: str) -> AgentModel:
+    async def get_in_db(id: str) -> AgentModel:
         if not id:
             raise ValueError('Agent ID is required')
         try:
-            supabase = get_supabase(access_token)
+            supabase = get_supabase()
             result = supabase.table('agents').select('*').eq('id', id).limit(1).execute()
             agent_dict = result.data[0]
             print(f"Fetched agent: {agent_dict}")
