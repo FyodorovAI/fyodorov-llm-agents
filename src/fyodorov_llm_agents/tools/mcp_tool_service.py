@@ -1,6 +1,11 @@
 from datetime import datetime
+import json
+from typing import Any, Optional
+
+import requests
 from fyodorov_utils.config.supabase import get_supabase
 from .mcp_tool_model import MCPTool as ToolModel
+
 
 class MCPTool():
 
@@ -125,7 +130,7 @@ class MCPTool():
                 tool["user_id"] = str(tool["user_id"])
                 tool["created_at"] = str(tool["created_at"])
                 tool["updated_at"] = str(tool["updated_at"])
-                if tool and (tool['public'] == True or (user_id and 'user_id' in tool and tool['user_id'] == user_id)):
+                if tool and (tool['public'] or (user_id and 'user_id' in tool and tool['user_id'] == user_id)):
                     print('tool is public or belongs to user', tool)
                     tool_model = ToolModel(**tool)
                     if tool_model.validate():
@@ -169,4 +174,36 @@ class MCPTool():
             return agent_ids
         except Exception as e:
             print('Error setting tool agents', str(e))
-            raise
+            raise e
+
+    @staticmethod
+    async def call_mcp_server(id: str, access_token: Optional[str] = None, args: Optional[dict[str, Any]] = None) -> str:
+        """Invoke an MCP tool via the tool's configured MCP server."""
+        if not id:
+            raise ValueError('Tool ID is required')
+        tool = await MCPTool.get_in_db(access_token, id)
+        if not tool:
+            raise ValueError('Tool not found')
+        if not tool.handle:
+            raise ValueError('Tool handle is required')
+        if not tool.api_url:
+            raise ValueError('Tool api_url is required')
+
+        url = f"{tool.api_url}:call"
+        headers = {'Content-Type': 'application/json'}
+        if access_token:
+            headers['Authorization'] = f'Bearer {access_token}'
+        if args is None:
+            args = {}
+
+        try:
+            print(f"Calling MCP server at {url} with args {args}")
+            response = requests.post(url, headers=headers, json=args, timeout=30)
+            response.raise_for_status()
+            content_type = response.headers.get('Content-Type', '')
+            if 'application/json' in content_type:
+                return json.dumps(response.json())
+            return response.text
+        except requests.RequestException as e:
+            print('Error calling MCP server', str(e))
+            raise e
