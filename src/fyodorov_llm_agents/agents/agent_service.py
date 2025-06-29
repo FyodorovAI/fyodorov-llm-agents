@@ -2,7 +2,10 @@ from datetime import datetime
 import os
 from supabase import Client
 import litellm
+import requests
+
 from fyodorov_utils.config.supabase import get_supabase
+from fyodorov_utils.service_discovery import get_service_url
 from fyodorov_llm_agents.agents.agent_model import Agent as AgentModel
 from fyodorov_llm_agents.tools.mcp_tool_model import MCPTool as ToolModel
 from fyodorov_llm_agents.tools.mcp_tool_service import MCPTool as ToolService
@@ -230,7 +233,10 @@ class Agent(AgentModel):
             if not mcp_tool:
                 raise ValueError(f"Tool '{fn_name}' not found in loaded MCP tools")
 
-            tool_output = mcp_tool.call(args)
+            # Forward tool call to Tsiolkovsky instead of calling locally
+            tool_output = await self._forward_tool_call_to_tsiolkovsky(
+                mcp_tool.id, args, user_session
+            )
 
             messages.append({
                 "role": "assistant",
@@ -255,5 +261,26 @@ class Agent(AgentModel):
         print(f"Answer: {answer}")
         return {
             "answer": answer,
-
         }
+    
+    async def _forward_tool_call_to_tsiolkovsky(self, tool_id: str, args: str, user_session: str) -> str:
+        """Forward function call to Tsiolkovsky for execution"""
+        try:
+            tsiolkovsky_url = get_service_url('Tsiolkovsky')
+            
+            response = await asyncio.to_thread(
+                requests.post,
+                f"{tsiolkovsky_url}/tools/{tool_id}/call",
+                json={"args": args},
+                headers={"Authorization": f"Bearer {user_session}"},
+                timeout=30
+            )
+            
+            if response.status_code == 200:
+                result = response.json()
+                return result.get("result", "")
+            else:
+                return f"Error calling tool: {response.status_code} - {response.text}"
+                
+        except Exception as e:
+            return f"Error forwarding tool call: {str(e)}"

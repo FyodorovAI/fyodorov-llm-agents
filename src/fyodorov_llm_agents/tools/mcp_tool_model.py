@@ -37,6 +37,11 @@ class MCPTool(BaseModel):
     health_status: Optional[str] = None
     usage_notes: Optional[str] = None
 
+    # Fields for launching local tools
+    launch_command: Optional[str] = None              # The command to execute (e.g., "npx", "python")
+    launch_args: Optional[list[str]] = None           # Arguments for the command (e.g., ["-y", "mcp-remote@latest"])
+    launch_working_directory: Optional[str] = None    # Working directory for the command
+
     # Example validations below. Adjust/extend to fit your needs.
 
     def validate(self) -> bool:
