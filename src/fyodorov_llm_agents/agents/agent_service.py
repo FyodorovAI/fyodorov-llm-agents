@@ -5,7 +5,7 @@ import litellm
 import requests
 
 from fyodorov_utils.config.supabase import get_supabase
-from fyodorov_utils.service_discovery import get_service_url
+from fyodorov_utils.config.service_discovery import get_service_url
 from fyodorov_llm_agents.agents.agent_model import Agent as AgentModel
 from fyodorov_llm_agents.tools.mcp_tool_model import MCPTool as ToolModel
 from fyodorov_llm_agents.tools.mcp_tool_service import MCPTool as ToolService
