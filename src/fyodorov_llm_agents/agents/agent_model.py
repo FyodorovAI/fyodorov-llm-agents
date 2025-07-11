@@ -112,10 +112,12 @@ class Agent(BaseModel):
         return agent
 
     @staticmethod
-    def from_dict(agent_dict: dict):
+    def from_dict(agent_dict: dict, user_id: str = None):
         """Instantiate Agent from dict."""
         if not agent_dict:
             raise ValueError('Agent dict is required')
+        if 'model' in agent_dict and isinstance(agent_dict['model'], str):
+            agent_dict['model'] = LLMModel.get_model(user_id, agent_dict['model']).to_dict()
         agent = Agent(**agent_dict)
         agent.validate()
         return agent

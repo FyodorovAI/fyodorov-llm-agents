@@ -113,7 +113,7 @@ class Agent(AgentModel):
 
     @staticmethod
     async def save_from_dict(access_token: str, user_id: str, data):
-        agent = AgentModel.from_dict(data)
+        agent = AgentModel.from_dict(data, user_id)
         agent_dict = agent.to_dict()
         model_name = data['model']
         model = await LLM.get_model(user_id, model_name)
