@@ -100,7 +100,7 @@ class Agent(BaseModel):
         except Exception as e:
             print(f"Error calling API: {e}")
             raise
-    
+
     @staticmethod
     def from_yaml(yaml_str: str):
         """Instantiate Agent from YAML."""
@@ -116,6 +116,7 @@ class Agent(BaseModel):
         """Instantiate Agent from dict."""
         if not agent_dict:
             raise ValueError('Agent dict is required')
+        print(f"Creating Agent from dict: {agent_dict}")
         if 'model' in agent_dict and isinstance(agent_dict['model'], str):
             agent_dict['model'] = LLMModel.get_model(user_id, agent_dict['model']).to_dict()
         agent = Agent(**agent_dict)
