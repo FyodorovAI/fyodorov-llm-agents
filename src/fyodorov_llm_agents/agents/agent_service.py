@@ -112,10 +112,9 @@ class Agent(AgentModel):
             raise e
 
     @staticmethod
-    async def save_from_dict(access_token: str, user_id: str, data):
-        agent = AgentModel.from_dict(data, user_id)
-        agent_dict = agent.to_dict()
-        model_name = data['model']
+    async def save_from_dict(access_token: str, user_id: str, agent_dict):
+        agent = AgentModel.from_dict(agent_dict, user_id)
+        model_name = agent_dict['model']
         model = await LLM.get_model(user_id, model_name)
         if model:
             agent_dict['model_id'] = model.id

@@ -118,7 +118,9 @@ class Agent(BaseModel):
         if not agent_dict:
             raise ValueError('Agent dict is required')
         if 'model' in agent_dict and isinstance(agent_dict['model'], str):
-            agent_dict['model'] = LLM.get_model(user_id, agent_dict['model']).to_dict()
+            model = LLM.get_model(user_id, agent_dict['model']).to_dict()
+            agent_dict['model'] = model
+            agent_dict['model_id'] = model.id
         agent = Agent(**agent_dict)
         agent.validate()
         return agent

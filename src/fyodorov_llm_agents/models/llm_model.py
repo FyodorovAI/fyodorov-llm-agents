@@ -1,5 +1,4 @@
-from pydantic import BaseModel, validator
-from fyodorov_llm_agents.providers.provider_model import Provider as ProviderTypes
+from pydantic import BaseModel
 
 class LLMModel(BaseModel):
     id: int | None = None
