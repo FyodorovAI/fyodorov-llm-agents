@@ -4,6 +4,7 @@ import yaml
 from pydantic import BaseModel, HttpUrl
 from typing import Optional
 from fyodorov_llm_agents.models.llm_model import LLMModel
+from fyodorov_llm_agents.models.llm_service import LLM
 from fyodorov_llm_agents.providers.provider_model import ProviderModel
 from datetime import datetime
 
@@ -116,9 +117,8 @@ class Agent(BaseModel):
         """Instantiate Agent from dict."""
         if not agent_dict:
             raise ValueError('Agent dict is required')
-        print(f"Creating Agent from dict: {agent_dict}")
         if 'model' in agent_dict and isinstance(agent_dict['model'], str):
-            agent_dict['model'] = LLMModel.get_model(user_id, agent_dict['model']).to_dict()
+            agent_dict['model'] = LLM.get_model(user_id, agent_dict['model']).to_dict()
         agent = Agent(**agent_dict)
         agent.validate()
         return agent
