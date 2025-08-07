@@ -14,6 +14,7 @@ VALID_CHARACTERS_REGEX = r'^[a-zA-Z0-9\s.,!?:;\'"-_]+$'
 
 class Agent(BaseModel):
     id: Optional[int] = None
+    user_id: Optional[str] = None
     created_at: Optional[datetime] = None
     api_key: str | None = None
     api_url: HttpUrl | None = None
@@ -72,7 +73,11 @@ class Agent(BaseModel):
         return prompt
 
     def to_dict(self) -> dict:
-        return self.dict(exclude_none=True)
+        agent = self.dict(exclude_none=True)
+        del agent['model'] # to avoid problems when saving to db
+        if self.model:
+            agent['model_id'] = self.model.id
+        return agent
         # return {
         #     'model': self.model,
         #     'name': self.name,
@@ -113,14 +118,24 @@ class Agent(BaseModel):
         return agent
 
     @staticmethod
-    def from_dict(agent_dict: dict, user_id: str = None):
+    async def from_dict(agent_dict: dict, user_id: str = None):
         """Instantiate Agent from dict."""
         if not agent_dict:
             raise ValueError('Agent dict is required')
         if 'model' in agent_dict and isinstance(agent_dict['model'], str):
-            model = LLM.get_model(user_id, agent_dict['model']).to_dict()
-            agent_dict['model'] = model
+            model = await LLM.get_model(user_id, agent_dict['model'])
+            if model is None:
+                model = await LLM.save_model_in_db(
+                    access_token=None,  # Assuming no access token needed for this operation
+                    user_id=user_id,
+                    model_dict = LLMModel.from_dict(agent_dict['model'])
+                )
+            model_dict = model.to_dict()
+            agent_dict['model'] = model_dict
             agent_dict['model_id'] = model.id
+        if user_id:
+            agent_dict['user_id'] = user_id
+        print(f"Agent dict: {agent_dict}")
         agent = Agent(**agent_dict)
         agent.validate()
         return agent

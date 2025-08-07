@@ -130,6 +130,7 @@ class Provider(ProviderModel):
     async def get_providers(limit: int = 10, created_at_lt: datetime = datetime.now(), user_id: str = None) -> list[dict]:
         try:
             if user_id:
+                print(f"Fetching providers for user_id: {user_id} with limit: {limit} and created_at_lt: {created_at_lt}")
                 result = supabase.table('providers') \
                             .select('*') \
                             .eq('user_id', user_id) \

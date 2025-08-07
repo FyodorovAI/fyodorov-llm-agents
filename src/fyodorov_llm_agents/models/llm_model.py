@@ -12,8 +12,8 @@ class LLMModel(BaseModel):
     output_cost_per_token: float | None = None
     max_tokens: int | None = None
 
-    def to_dict(self):
-        return {
+    def to_dict(self) -> dict:
+        model = {
             'name': self.name,
             'provider': self.provider,
             'params': self.params,
@@ -23,6 +23,12 @@ class LLMModel(BaseModel):
             'output_cost_per_token': self.output_cost_per_token,
             'max_tokens': self.max_tokens
         }
+        if self.id:
+            model['id'] = self.id
+        if self.provider_id:
+            model['provider_id'] = self.provider_id
+        print(f"LLMModel to_dict: {model}")
+        return model
     
     def resource_dict(self) -> dict:
         return {

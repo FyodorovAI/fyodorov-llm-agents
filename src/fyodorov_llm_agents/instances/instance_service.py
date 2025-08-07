@@ -134,7 +134,7 @@ class Instance(InstanceModel):
         try:
             result = supabase.table('instances').select('*').eq('id', id).limit(1).execute()
             instance_dict = result.data[0]
-            print(f"Fetched instance: {instance_dict}")
+            print(f"Fetched instance by id: {instance_dict}")
             instance = InstanceModel(**instance_dict)
             return instance
         except Exception as e:

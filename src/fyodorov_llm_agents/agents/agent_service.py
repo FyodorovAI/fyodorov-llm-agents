@@ -20,27 +20,30 @@ class Agent(AgentModel):
             **agent.to_dict()
         )
 
-    @staticmethod    
-    async def create_in_db(access_token: str, agent: AgentModel) -> str:
+    @staticmethod
+    async def create_in_db(access_token: str, agent: AgentModel, user_id: str = None) -> dict:
         try:
-            supabase = get_supabase(access_token)
-            result = supabase.table('agents').upsert(agent.to_dict()).execute()
-            agent_id = result.data[0]['id']
-            return agent_id
+            agent.validate()
+            agent_dict = agent.to_dict()
+            if user_id:
+                agent_dict['user_id'] = user_id
+            print('Creating agent with dict:', agent_dict)
+            return await Agent.create_agent_in_db(access_token, agent_dict)
         except Exception as e:
             print('Error creating agent', str(e))
             raise e
 
-    @staticmethod    
-    async def create_agent_in_db(access_token: str, agent: dict, user_id: str) -> str:
+    @staticmethod
+    async def create_agent_in_db(access_token: str, agent: dict, user_id: str = None) -> dict:
         try:
             supabase = get_supabase(access_token)
-            agent['user_id'] = user_id
+            if user_id:
+                agent['user_id'] = user_id
             result = supabase.table('agents').upsert(agent).execute()
             agent_dict = result.data[0]
             return agent_dict
         except Exception as e:
-            print('Error creating agent', str(e))
+            print('Error creating agent in db', str(e))
             raise e
 
     @staticmethod
@@ -106,21 +109,16 @@ class Agent(AgentModel):
                 return []
             agents = [AgentModel(**agent) for agent in result.data]
             print(f"Fetched agents: {agents}")
-            return agents
+            return agents   
         except Exception as e:
             print('Error fetching agents', str(e))
             raise e
 
     @staticmethod
     async def save_from_dict(access_token: str, user_id: str, agent_dict):
-        agent = AgentModel.from_dict(agent_dict, user_id)
-        model_name = agent_dict['model']
-        model = await LLM.get_model(user_id, model_name)
-        if model:
-            agent_dict['model_id'] = model.id
-        del agent_dict['model']
-        print('Saving agent', agent_dict)
-        agent = await Agent.create_agent_in_db(access_token, agent_dict, user_id)
+        agent = await AgentModel.from_dict(agent_dict, user_id)
+        print('Saving agent', agent)
+        agent = await Agent.create_in_db(access_token, agent)
         return agent
 
     @staticmethod
@@ -164,7 +162,7 @@ class Agent(AgentModel):
             raise ValueError('Tool ID is required')
         try:
             supabase = get_supabase(access_token)
-            result = supabase.table('agent_mcp_tools').delete().eq('agent_id', agent_id).eq('mcp_tool_id', tool_id).execute()
+            supabase.table('agent_mcp_tools').delete().eq('agent_id', agent_id).eq('mcp_tool_id', tool_id).execute()
             return True
         except Exception as e:
             print('Error deleting agent tool', str(e))
@@ -175,6 +173,7 @@ class Agent(AgentModel):
         litellm.set_verbose = True
         # Set environmental variable
         print(f"[call_with_fn_calling] self.model: {self.model}")
+        model = ""
         if self.provider:
             self.api_key = self.provider.api_key
             self.api_url = self.provider.api_url
