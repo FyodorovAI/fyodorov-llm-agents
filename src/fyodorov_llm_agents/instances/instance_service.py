@@ -4,7 +4,8 @@ from typing import Dict, Any, List, Optional
 from fyodorov_llm_agents.base_service import BaseService
 from fyodorov_llm_agents.providers.provider_service import Provider
 from fyodorov_llm_agents.agents.agent_model import Agent as AgentModel
-from fyodorov_llm_agents.agents.agent_service import AgentService, Agent
+from fyodorov_llm_agents.agents.agent_service import AgentService
+from fyodorov_llm_agents.agents.agent_executor import AgentExecutor
 from fyodorov_llm_agents.tools.mcp_tool_service import MCPTool as ToolService
 from .instance_model import InstanceModel
 
@@ -170,9 +171,9 @@ class Instance(InstanceModel):
                     agent.prompt += f"\n\n{agent.tools[index].handle}: {agent.tools[index].description}\n\n"
         
         # Create runtime agent and execute
-        runtime_agent = Agent(agent)
-        res = await runtime_agent.call_with_fn_calling(
-            input=input, history=self.chat_history, user_id=user_id
+        executor = AgentExecutor()
+        res = await executor.run(
+            agent=agent, input=input, history=self.chat_history, user_id=user_id
         )
         
         # Update chat history
