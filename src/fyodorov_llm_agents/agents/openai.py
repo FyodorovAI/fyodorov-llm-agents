@@ -3,6 +3,7 @@ from .agent import Agent
 
 DEFAULT_MODEL: str = "gpt-3.5-turbo"
 
+
 class OpenAI(Agent):
     tools: list = []
     rag: list = []
@@ -14,7 +15,9 @@ class OpenAI(Agent):
         self.model = model
 
     def call(self, prompt: str = "", input: str = "", temperature: float = 0.0):
-        print(f"[OpenAI] Calling OpenAI with prompt: {prompt}, input: {input}, temperature: {temperature}")
+        print(
+            f"[OpenAI] Calling OpenAI with prompt: {prompt}, input: {input}, temperature: {temperature}"
+        )
         if temperature > 2.0 or temperature < 0.0:
             raise ValueError("Temperature must be between 0.0 and 2.0")
 
