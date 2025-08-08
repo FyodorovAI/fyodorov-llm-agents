@@ -1,48 +1,38 @@
-from pydantic import BaseModel, Field
-from typing import Optional, Dict, Any, Literal
-import re
-from datetime import datetime
-import yaml
+from pydantic import Field
+from typing import Optional, Dict, Any, Literal, ClassVar
 import requests
 import json
+from fyodorov_llm_agents.base_model import FyodorovBaseModel
 
 APIUrlTypes = Literal['openapi']
 
-# Example regex for validating textual fields; adjust as needed
-VALID_CHARACTERS_REGEX = r'^[a-zA-Z0-9\s.,!?:;\'"\-_]+$'
-MAX_NAME_LENGTH = 80
-MAX_DESCRIPTION_LENGTH = 1000
-
-class MCPTool(BaseModel):
+class MCPTool(FyodorovBaseModel):
     """
     Pydantic model corresponding to the 'mcp_tools' table.
     """
-    # Database columns
-    id: Optional[int] = None                          # bigserial (int8) primary key
-    created_at: Optional[datetime] = None             # timestamptz
-    updated_at: Optional[datetime] = None             # timestamptz
-
+    # Override class constants for validation
+    MAX_NAME_LENGTH: ClassVar[int] = 80
+    MAX_DESCRIPTION_LENGTH: ClassVar[int] = 1000
+    
     name: Optional[str] = Field(..., max_length=MAX_NAME_LENGTH)
     handle: Optional[str] = None
     description: Optional[str] = Field(None, max_length=MAX_DESCRIPTION_LENGTH)
-    logo_url: Optional[str] = None                    # stored as text; could be a URL
-    user_id: Optional[str] = None                     # uuid
+    logo_url: Optional[str] = None
+    user_id: Optional[str] = None
 
     public: Optional[bool] = False
     api_type: Optional[str] = None
-    api_url: Optional[str] = None                     # stored as text; could also be HttpUrl
+    api_url: Optional[str] = None
     auth_method: Optional[str] = None
-    auth_info: Optional[Dict[str, Any]] = None        # jsonb
-    capabilities: Optional[Dict[str, Any]] = None     # jsonb
+    auth_info: Optional[Dict[str, Any]] = None
+    capabilities: Optional[Dict[str, Any]] = None
     health_status: Optional[str] = None
     usage_notes: Optional[str] = None
 
     # Fields for launching local tools
-    launch_command: Optional[str] = None              # The command to execute (e.g., "npx", "python")
-    launch_args: Optional[list[str]] = None           # Arguments for the command (e.g., ["-y", "mcp-remote@latest"])
-    launch_working_directory: Optional[str] = None    # Working directory for the command
-
-    # Example validations below. Adjust/extend to fit your needs.
+    launch_command: Optional[str] = None
+    launch_args: Optional[list[str]] = None
+    launch_working_directory: Optional[str] = None
 
     def validate(self) -> bool:
         """
@@ -50,44 +40,20 @@ class MCPTool(BaseModel):
         Returns True if all validations pass, otherwise raises ValueError.
         """
         if self.name:
-            self._validate_name(self.name)
+            self.validate_text_field(self.name, 'Name', self.MAX_NAME_LENGTH)
         if self.description:
-            self._validate_description(self.description)
-        # Add more validations as desired...
-        return True
+            self.validate_text_field(self.description, 'Description', self.MAX_DESCRIPTION_LENGTH)
+        return super().validate()
 
-    def resource_dict(self) -> dict:
+    def resource_dict(self) -> Dict[str, Any]:
+        """Generate resource dictionary for API responses"""
         return {
             'id': self.id,
             'name': self.name,
             'description': self.description,
         }
 
-    @staticmethod
-    def _validate_name(name: str) -> None:
-        if not re.match(VALID_CHARACTERS_REGEX, name):
-            raise ValueError("name contains invalid characters.")
-
-    @staticmethod
-    def _validate_description(description: str) -> None:
-        if not re.match(VALID_CHARACTERS_REGEX, description):
-            raise ValueError("description contains invalid characters.")
-
-    @staticmethod
-    def from_yaml(yaml_str: str):
-        """Instantiate Tool from YAML."""
-        if not yaml_str:
-            raise ValueError('YAML string is required')
-        tool_dict = yaml.safe_load(yaml_str)
-        if not isinstance(tool_dict, dict):
-            raise ValueError('YAML string must represent a dictionary')
-        tool = MCPTool(**tool_dict)
-        if not tool.validate():
-            print(f"Invalid tool data: {tool_dict}")
-            return None
-        return tool
-
-    def get_function(self) -> dict:
+    def get_function(self) -> Dict[str, Any]:
         """
         Convert this MCP tool into a function definition usable by LLMs (OpenAI-style).
         """
@@ -102,7 +68,8 @@ class MCPTool(BaseModel):
             "parameters": func.get("parameters", {}),
         }
 
-    def call(self, args: dict) -> str:
+    def call(self, args: Dict[str, Any]) -> str:
+        """Call the MCP tool with given arguments"""
         if not self.api_url:
             raise ValueError("MCP tool is missing an `api_url`")
 
@@ -112,19 +79,15 @@ class MCPTool(BaseModel):
         }
 
         # Handle authentication
+        auth = None
         if self.auth_method == "bearer":
-            token = self.auth_info.get("token")
-            if not token:
+            if not self.auth_info or not self.auth_info.get("token"):
                 raise ValueError("Bearer token required but not provided in `auth_info`")
-            headers["Authorization"] = f"Bearer {token}"
+            headers["Authorization"] = f"Bearer {self.auth_info['token']}"
         elif self.auth_method == "basic":
-            user = self.auth_info.get("username")
-            pwd = self.auth_info.get("password")
-            if not user or not pwd:
+            if not self.auth_info or not self.auth_info.get("username") or not self.auth_info.get("password"):
                 raise ValueError("Basic auth requires `username` and `password` in `auth_info`")
-            auth = (user, pwd)
-        else:
-            auth = None  # anonymous access
+            auth = (self.auth_info["username"], self.auth_info["password"])
 
         try:
             print(f"Calling MCP tool at {self.api_url} with args: {args}")
@@ -137,10 +100,3 @@ class MCPTool(BaseModel):
         except requests.RequestException as e:
             print(f"Error calling MCP tool: {e}")
             return f"Error calling tool: {e}"
-
-
-    def to_dict(self) -> dict:
-        """
-        Convert this Pydantic model to a plain dict (e.g., for inserting into Supabase).
-        """
-        return self.dict(exclude_none=True)

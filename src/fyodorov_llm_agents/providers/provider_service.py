@@ -1,155 +1,150 @@
 from datetime import datetime
-from .provider_model import ProviderModel
-from supabase import Client
-from fyodorov_utils.config.supabase import get_supabase
-
-supabase: Client = get_supabase()
+from typing import Dict, Any, Optional, List
+from fyodorov_llm_agents.base_service import BaseService
+from fyodorov_llm_agents.providers.provider_model import ProviderModel
 
 
-class Provider(ProviderModel):
+class Provider(BaseService[ProviderModel]):
+    
+    def __init__(self):
+        super().__init__('providers')
+    
+    def _dict_to_model(self, data: Dict[str, Any]) -> ProviderModel:
+        """Convert dictionary from database to ProviderModel"""
+        # Ensure id is properly converted
+        if 'id' in data:
+            data['id'] = str(data['id'])
+        return ProviderModel.from_dict(data)
+    
+    def _model_to_dict(self, model: ProviderModel) -> Dict[str, Any]:
+        """Convert ProviderModel to dictionary for database"""
+        return model.to_dict()
 
-    @staticmethod
-    async def update_provider_in_db(id: str, update: dict) -> dict:
-        if not id:
-            raise ValueError('Provider ID is required')
-        try:
-            result = supabase.table('providers').update(update).eq('id', id).execute()
-            update = result.data[0]
-            print('Updated provider:', update)
-            return update
-        except Exception as e:
-            print(f"Error updating provider with id {id} "
-                  f"and update {update} ")
-            raise e
+    async def update_provider_in_db(self, id: str, update: Dict[str, Any], access_token: Optional[str] = None) -> ProviderModel:
+        """Update provider in database"""
+        return await self.update_in_db(id, update, access_token)
 
-    @staticmethod
-    async def save_provider_in_db(access_token: str, provider: ProviderModel, user_id: str) -> dict:
+    async def save_provider_in_db(self, access_token: str, provider: ProviderModel, user_id: str) -> ProviderModel:
+        """Save provider in database with automatic URL setting"""
         try:
             print('Access token for saving provider:', access_token)
-            supabase = get_supabase(access_token)
-            provider.name = provider.name.lower()
+            
+            # Set default API URLs based on provider name
             if not provider.api_url or provider.api_url == "":
-                if provider.name == "openai":
-                    provider.api_url = "https://api.openai.com/v1"
-                elif provider.name == "mistral":
-                    provider.api_url = "https://api.mistral.ai/v1"
-                elif provider.name == "ollama":
-                    provider.api_url = "http://localhost:11434/v1"
-                elif provider.name == "openrouter":
-                    provider.api_url = "https://openrouter.ai/api/v1"
-                elif provider.name == "gemini" or provider.name == "google":
-                    provider.api_url = "https://generativelanguage.googleapis.com/v1beta/models/"
-                else:
-                    raise ValueError('No URL provided when creating a provider')
+                provider = self._set_default_api_url(provider)
+            
             print('Setting provider api_url to', provider.api_url)
-            provider_dict = provider.to_dict()
-            provider_dict['user_id'] = user_id
-            print('Provider dict before merging existing row:', provider_dict)
-            # Check if the provider already exists based on name and user_id
-            existing_provider = await Provider.get_provider(access_token, user_id, provider.name)
+            
+            # Check if provider already exists and merge if needed
+            existing_provider = await self.get_provider(access_token, user_id, provider.name)
             if existing_provider:
-                tmp = {**existing_provider.to_dict(), **provider_dict}
-                provider_dict = tmp
-            print('Saving provider', provider_dict)
-            result = supabase.table('providers').upsert(provider_dict).execute()
-            provider = result.data[0]
-            print('Saved provider', provider)
-            return provider
+                print('Provider already exists, merging with existing data')
+                # Merge existing data with new data (new data takes precedence)
+                existing_dict = existing_provider.to_dict()
+                new_dict = provider.to_dict()
+                merged_dict = {**existing_dict, **new_dict}
+                provider = ProviderModel.from_dict(merged_dict)
+            
+            # Use upsert method from base class
+            result = await self.upsert_in_db(provider, access_token, user_id)
+            print('Saved provider', result)
+            return result
+            
         except Exception as e:
-            print('Error saving provider', str(e))
-            if e.code == '23505':
+            # Handle duplicate key error
+            if hasattr(e, 'code') and e.code == '23505':
                 print('Provider already exists')
                 return provider
             raise e
 
-    @staticmethod
-    async def delete_provider_in_db(id) -> bool:
-        if not id:
-            raise ValueError('Provider ID is required')
-        try:
-            result = supabase.table('providers').delete().eq('id', id).execute()
-            return True
-        except Exception as e:
-            print('Error deleting provider', str(e))
-            raise e
+    def _set_default_api_url(self, provider: ProviderModel) -> ProviderModel:
+        """Set default API URL based on provider name"""
+        name = provider.name.lower()
+        url_map = {
+            "openai": "https://api.openai.com/v1",
+            "mistral": "https://api.mistral.ai/v1", 
+            "ollama": "http://localhost:11434/v1",
+            "openrouter": "https://openrouter.ai/api/v1",
+            "gemini": "https://generativelanguage.googleapis.com/v1beta/models/",
+            "google": "https://generativelanguage.googleapis.com/v1beta/models/"
+        }
+        
+        if name in url_map:
+            provider.api_url = url_map[name]
+        else:
+            raise ValueError('No URL provided when creating a provider')
+            
+        return provider
 
-    @staticmethod
-    async def get_provider_by_id(id: str) -> ProviderModel:
-        if not id:
-            raise ValueError('Provider ID is required')
-        try:
-            supabase = get_supabase()
-            result = supabase.table('providers').select('*').eq('id', id).limit(1).execute()
-            provider_dict = result.data[0]
-            print('[get_provider_by_id] Fetched provider', provider_dict)
-            provider_dict['id'] = str(provider_dict['id'])
-            provider = ProviderModel(**provider_dict)
-            return provider
-        except Exception as e:
-            print('Error fetching provider', str(e))
-            raise e
+    async def delete_provider_in_db(self, id: str, access_token: Optional[str] = None) -> bool:
+        """Delete provider from database"""
+        return await self.delete_in_db(id, access_token)
 
-    @staticmethod
-    async def get_provider(access_token: str, user_id: str, name: str) -> ProviderModel:
+    async def get_provider_by_id(self, id: str, access_token: Optional[str] = None) -> Optional[ProviderModel]:
+        """Get provider by ID"""
+        print('[get_provider_by_id] Fetching provider by ID:', id)
+        provider = await self.get_in_db(id, access_token)
+        if provider:
+            print('[get_provider_by_id] Fetched provider', provider)
+        return provider
+
+    async def get_provider(self, access_token: str, user_id: str, name: str) -> Optional[ProviderModel]:
+        """Get provider by name and user_id"""
         print(f"Getting provider with name: {name} and user_id: {user_id}")
         if not name:
             raise ValueError('Provider name is required')
         if not user_id:
             raise ValueError('User ID is required')
+        
         try:
-            supabase = get_supabase(access_token)
-            print('Got access token for getting provider:', access_token)
-            result = supabase.table('providers').select('*')\
-                .eq('user_id', user_id)\
-                .eq('name', name.lower())\
-                .limit(1).execute()
-            print('Result of getting provider:', result)
-            if not result or not result.data or len(result.data) == 0:
+            # Use the base class method with filters
+            filters = {
+                'user_id': user_id,
+                'name': name.lower()
+            }
+            
+            providers = await self.get_all_in_db(
+                limit=1, 
+                user_id=None,  # Don't double-filter by user_id
+                filters=filters,
+                access_token=access_token
+            )
+            
+            if not providers:
                 print('Provider not found')
                 return None
-            provider_dict = result.data[0]
-            print('[get_provider] Fetched provider', provider_dict)
-            provider_dict['id'] = str(provider_dict['id'])
-            provider = ProviderModel(**provider_dict)
+                
+            provider = providers[0]
+            print('[get_provider] Fetched provider', provider)
             return provider
+            
         except Exception as e:
             print('Error fetching provider', str(e))
             raise e
 
-    @staticmethod
-    async def get_or_create_provider(access_token: str, user_id: str, name: str) -> ProviderModel:
+    async def get_or_create_provider(self, access_token: str, user_id: str, name: str) -> ProviderModel:
+        """Get existing provider or create new one"""
         try:
-            provider = await Provider.get_provider(access_token, user_id, name)
-            return provider
-        except Exception as e:            
-            provider = ProviderModel(name=name.lower())
-            provider = await Provider.save_provider_in_db(access_token, provider, user_id)
-            return provider
-
-    @staticmethod
-    async def get_providers(limit: int = 10, created_at_lt: datetime = datetime.now(), user_id: str = None) -> list[dict]:
-        try:
-            if user_id:
-                print(f"Fetching providers for user_id: {user_id} with limit: {limit} and created_at_lt: {created_at_lt}")
-                result = supabase.table('providers') \
-                            .select('*') \
-                            .eq('user_id', user_id) \
-                            .order('created_at', desc=True) \
-                            .limit(limit) \
-                            .lt('created_at', created_at_lt) \
-                            .execute()
-                data = result.data
-            else:
-                result = supabase.table('providers') \
-                            .select('*') \
-                            .order('created_at', desc=True) \
-                            .limit(limit) \
-                            .lt('created_at', created_at_lt) \
-                            .execute()
-                data = result.data
-            providers = [ProviderModel(**provider) for provider in data]
-            print('Fetched providers', providers)
-            return providers
+            provider = await self.get_provider(access_token, user_id, name)
+            if provider:
+                return provider
         except Exception as e:
-            print('Error fetching providers', str(e))
-            raise e
+            print(f'Error getting provider {name}: {e}')
+            
+        # Create new provider if not found
+        provider = ProviderModel(name=name.lower())
+        return await self.save_provider_in_db(access_token, provider, user_id)
+
+    async def get_providers(self, limit: int = 10, created_at_lt: datetime = datetime.now(), user_id: str = None, access_token: Optional[str] = None) -> List[ProviderModel]:
+        """Get providers with optional filtering"""
+        print(f"Fetching providers for user_id: {user_id} with limit: {limit} and created_at_lt: {created_at_lt}")
+        
+        providers = await self.get_all_in_db(
+            limit=limit,
+            created_at_lt=created_at_lt,
+            user_id=user_id,
+            access_token=access_token
+        )
+        
+        print('Fetched providers', providers)
+        return providers

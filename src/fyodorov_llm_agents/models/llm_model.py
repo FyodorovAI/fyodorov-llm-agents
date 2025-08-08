@@ -1,7 +1,7 @@
-from pydantic import BaseModel
+from typing import Dict, Any
+from fyodorov_llm_agents.base_model import FyodorovBaseModel
 
-class LLMModel(BaseModel):
-    id: int | None = None
+class LLMModel(FyodorovBaseModel):
     name: str
     provider: str | None = None
     provider_id: int | None = None
@@ -12,48 +12,43 @@ class LLMModel(BaseModel):
     output_cost_per_token: float | None = None
     max_tokens: int | None = None
 
-    def to_dict(self) -> dict:
-        model = {
-            'name': self.name,
-            'provider': self.provider,
-            'params': self.params,
-            'mode': self.mode,
-            'base_model': self.base_model,
-            'input_cost_per_token': self.input_cost_per_token,
-            'output_cost_per_token': self.output_cost_per_token,
-            'max_tokens': self.max_tokens
-        }
-        if self.id:
-            model['id'] = self.id
-        if self.provider_id:
-            model['provider_id'] = self.provider_id
-        print(f"LLMModel to_dict: {model}")
-        return model
+    def to_dict(self, exclude_none: bool = True, exclude_fields: list = None) -> Dict[str, Any]:
+        """Convert LLM model to dictionary"""
+        data = super().to_dict(exclude_none=exclude_none, exclude_fields=exclude_fields)
+        print(f"LLMModel to_dict: {data}")
+        return data
     
-    def resource_dict(self) -> dict:
+    def resource_dict(self) -> Dict[str, Any]:
+        """Generate resource dictionary for API responses"""
         return {
             'id': self.id,
             'name': self.name,
             'provider': self.provider,
         }
 
-    @staticmethod
-    def from_dict(data) -> 'LLMModel':
-        input_dict = {
-            "name": data['name'],
-            "provider": data['provider'],
-        }
-        if 'model_info' in data and 'base_model' in data['model_info']:
-            input_dict['base_model'] = data['model_info']['base_model']
-        if 'params' in data:
-            input_dict['params'] = data['params']
-        if 'mode' in data:
-            input_dict['mode'] = data['mode']
-        if 'input_cost_per_token' in data:
-            input_dict['input_cost_per_token'] = data['input_cost_per_token']
-        if 'output_cost_per_token' in data:
-            input_dict['output_cost_per_token'] = data['output_cost_per_token']
-        if 'max_tokens' in data:
-            input_dict['max_tokens'] = data['max_tokens']
-        print('Input dict for LLMModel:', input_dict)
-        return LLMModel(**input_dict)
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any], **kwargs) -> 'LLMModel':
+        """Create LLMModel from dictionary with special handling for nested data"""
+        processed_data = data.copy()
+        
+        # Handle model_info nested structure
+        if 'model_info' in data and isinstance(data['model_info'], dict):
+            if 'base_model' in data['model_info']:
+                processed_data['base_model'] = data['model_info']['base_model']
+        
+        # Ensure required fields are present
+        if 'name' not in processed_data:
+            raise ValueError('LLMModel requires a name')
+        if 'provider' not in processed_data:
+            raise ValueError('LLMModel requires a provider')
+            
+        print('Input dict for LLMModel:', processed_data)
+        return super().from_dict(processed_data, **kwargs)
+    
+    def validate(self) -> bool:
+        """Validate LLM model fields"""
+        if not self.name:
+            raise ValueError('LLM model name is required')
+        if not self.base_model:
+            raise ValueError('LLM base_model is required')
+        return super().validate()
