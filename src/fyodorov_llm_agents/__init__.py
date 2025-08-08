@@ -18,6 +18,13 @@ from .models.llm_model import LLMModel
 from .providers.provider_model import ProviderModel
 from .tools.mcp_tool_model import MCPTool
 
+# Import main services
+from .agents.agent_service import AgentService
+from .instances.instance_service import InstanceService
+from .models.llm_service import LLMService
+from .providers.provider_service import Provider as ProviderService
+from .tools.mcp_tool_service import MCPToolService
+
 __all__ = [
     "FyodorovBaseModel",
     "BaseService",
@@ -26,5 +33,10 @@ __all__ = [
     "LLMModel",
     "ProviderModel",
     "MCPTool",
+    "AgentService",
+    "InstanceService",
+    "LLMService",
+    "ProviderService",
+    "MCPToolService",
     "__version__",
 ]
