@@ -6,8 +6,8 @@ from fyodorov_llm_agents.models.llm_service import LLM
 
 
 class AgentService(BaseService[AgentModel]):
-    def __init__(self):
-        super().__init__("agents")
+    def __init__(self, **kwargs):
+        super().__init__("agents", **kwargs)
         
     def _dict_to_model(self, data: Dict[str, Any]) -> AgentModel:
         """Convert dictionary from database to AgentModel"""
@@ -16,19 +16,6 @@ class AgentService(BaseService[AgentModel]):
     def _model_to_dict(self, model: AgentModel) -> Dict[str, Any]:
         """Convert AgentModel to dictionary for database"""
         return model.to_dict()
-        
-    async def create_agent_in_db(self, access_token: str, agent: AgentModel, user_id: str = None) -> AgentModel:
-        """Create agent in database using base service method"""
-        agent.validate()
-        return await self.create_in_db(agent, access_token, user_id)
-        
-    async def update_agent_in_db(self, id: str, update_data: Dict[str, Any], access_token: Optional[str] = None) -> AgentModel:
-        """Update agent in database"""
-        return await self.update_in_db(id, update_data, access_token)
-        
-    async def delete_agent_in_db(self, id: str, access_token: Optional[str] = None) -> bool:
-        """Delete agent from database"""
-        return await self.delete_in_db(id, access_token)
         
     async def get_agent_in_db(self, id: str, access_token: Optional[str] = None) -> Optional[AgentModel]:
         """Get agent by ID with model loading"""
@@ -40,30 +27,26 @@ class AgentService(BaseService[AgentModel]):
             except Exception as e:
                 print(f"Error loading model for agent {id}: {e}")
         return agent
-        
-    async def get_agents_in_db(
+
+    async def get_all_in_db(
         self,
         limit: int = 10,
         created_at_lt: datetime = None,
         user_id: str = None,
         access_token: Optional[str] = None
     ) -> List[AgentModel]:
-        """Get agents with optional filtering"""
-        if created_at_lt is None:
-            created_at_lt = datetime.now()
-            
+        """Get agents with optional filtering"""            
         # Use custom filters for public agents if no user_id is provided
         filters = None
         if user_id is None:
             filters = {"public": True}
             
-        return await self.get_all_in_db(limit, created_at_lt, user_id, filters, access_token)
+        return await super().get_all_in_db(limit, created_at_lt, user_id, filters, access_token)
 
     async def save_from_dict(self, access_token: str, user_id: str, agent_dict: Dict[str, Any]) -> AgentModel:
         """Create agent from dictionary data"""
         agent = await AgentModel.from_dict(agent_dict, user_id)
-        print("Saving agent", agent)
-        return await self.create_agent_in_db(access_token, agent, user_id)
+        return await self.create_in_db(agent, access_token,user_id)
 
     async def get_agent_tools(self, access_token: str, agent_id: str) -> List[Dict[str, Any]]:
         """Get tools assigned to an agent"""

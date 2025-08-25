@@ -96,7 +96,7 @@ class InstanceService(BaseService[InstanceModel]):
                 
             # First get user's agents
             agent_service = AgentService()
-            agents = await agent_service.get_agents_in_db(
+            agents = await agent_service.get_all_in_db(
                 limit=limit, 
                 created_at_lt=created_at_lt, 
                 user_id=user_id, 

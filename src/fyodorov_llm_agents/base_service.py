@@ -20,27 +20,28 @@ class BaseService(Generic[T], ABC):
     for all fyodorov-llm-agents services.
     """
 
-    def __init__(self, table_name: str) -> None:
+    def __init__(self, table_name: str, access_token: Optional[str] = None, **model_kwargs) -> None:
         self.table_name = table_name
-        self._supabase_client: Optional[Client] = None
+        self.access_token = access_token
+        self._supabase_client: Optional[Client] = self.get_supabase_client()
+        self.model_kwargs = model_kwargs
 
     def get_supabase_client(self, access_token: Optional[str] = None) -> Client:
         """Get Supabase client, optionally with access token"""
-        if access_token:
-            return get_supabase(access_token)
-        if not self._supabase_client:
-            self._supabase_client = get_supabase()
+        if self._supabase_client is None:
+            access_token = access_token or self.access_token
+            self._supabase_client = get_supabase(access_token)
         return self._supabase_client
 
     @abstractmethod
     def _dict_to_model(self, data: Dict[str, Any]) -> T:
         """Convert dictionary from database to model instance"""
-        pass
+        return T(**data, **self.model_kwargs)
 
     @abstractmethod
     def _model_to_dict(self, model: T) -> Dict[str, Any]:
         """Convert model instance to dictionary for database"""
-        pass
+        return T(**self.model_kwargs)
 
     def _prepare_for_db(
         self, data: Dict[str, Any], exclude_fields: Optional[List[str]] = None
@@ -69,10 +70,12 @@ class BaseService(Generic[T], ABC):
         user_id: Optional[str] = None,
     ) -> T:
         """Create a new record in the database"""
+        print(f"Creating record in {self.table_name} table")
         try:
             supabase = self.get_supabase_client(access_token)
+            print("Got supabase client")
             data_dict = self._model_to_dict(model)
-
+            print("Converted model to dict")
             if user_id:
                 data_dict["user_id"] = user_id
 

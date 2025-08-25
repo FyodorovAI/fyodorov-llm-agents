@@ -5,8 +5,8 @@ from fyodorov_llm_agents.providers.provider_model import ProviderModel
 
 
 class Provider(BaseService[ProviderModel]):
-    def __init__(self):
-        super().__init__("providers")
+    def __init__(self, **kwargs):
+        super().__init__("providers", **kwargs)
 
     def _dict_to_model(self, data: Dict[str, Any]) -> ProviderModel:
         """Convert dictionary from database to ProviderModel"""
